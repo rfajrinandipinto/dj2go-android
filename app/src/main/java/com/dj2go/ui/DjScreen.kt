@@ -284,8 +284,8 @@ private fun DeckPanel(
 @Composable
 private fun TransportRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActions) {
     Row(Modifier.fillMaxWidth().height(32.dp)) {
-        TransportButton(
-            "CUE", ui.cue, accent,
+        TransportIconButton(
+            TransportIcon.CUE, ui.cue, accent,
             { actions.onTransport(deck, ControlId.CUE) },
             Modifier.weight(1f).fillMaxHeight()
         )
@@ -296,14 +296,14 @@ private fun TransportRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActio
             Modifier.weight(1f).fillMaxHeight()
         )
         Spacer(Modifier.width(5.dp))
-        TransportButton(
-            "SYNC", ui.sync, accent,
+        TransportIconButton(
+            TransportIcon.SYNC, ui.sync, accent,
             { actions.onTransport(deck, ControlId.SYNC) },
             Modifier.weight(1f).fillMaxHeight()
         )
         Spacer(Modifier.width(5.dp))
-        TransportButton(
-            "PFL", ui.pfl, accent,
+        TransportIconButton(
+            TransportIcon.HEADPHONE, ui.pfl, accent,
             { actions.onPfl(deck) },
             Modifier.weight(1f).fillMaxHeight()
         )

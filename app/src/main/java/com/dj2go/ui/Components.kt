@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -476,6 +477,100 @@ fun PlayPauseButton(
                     close()
                 }
                 drawPath(path, color)
+            }
+        }
+    }
+}
+
+enum class TransportIcon { CUE, SYNC, HEADPHONE }
+
+@Composable
+fun TransportIconButton(
+    icon: TransportIcon,
+    active: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (active) accent else Color(0xFF23232F))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.size(18.dp)) {
+            val color = if (active) Color.Black else Color(0xFFD0D0E0)
+            val w = size.width
+            val h = size.height
+            when (icon) {
+                TransportIcon.CUE -> {
+                    drawRect(
+                        color = color,
+                        topLeft = Offset(w * 0.08f, h * 0.12f),
+                        size = Size(w * 0.16f, h * 0.76f)
+                    )
+                    val path = Path().apply {
+                        moveTo(w * 0.38f, h * 0.12f)
+                        lineTo(w * 0.92f, h * 0.5f)
+                        lineTo(w * 0.38f, h * 0.88f)
+                        close()
+                    }
+                    drawPath(path, color)
+                }
+
+                TransportIcon.SYNC -> {
+                    val stroke = h * 0.13f
+                    drawLine(
+                        color, Offset(w * 0.14f, h * 0.33f), Offset(w * 0.76f, h * 0.33f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color, Offset(w * 0.58f, h * 0.14f), Offset(w * 0.8f, h * 0.33f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color, Offset(w * 0.58f, h * 0.52f), Offset(w * 0.8f, h * 0.33f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color, Offset(w * 0.86f, h * 0.67f), Offset(w * 0.24f, h * 0.67f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color, Offset(w * 0.42f, h * 0.48f), Offset(w * 0.2f, h * 0.67f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color, Offset(w * 0.42f, h * 0.86f), Offset(w * 0.2f, h * 0.67f),
+                        strokeWidth = stroke, cap = StrokeCap.Round
+                    )
+                }
+
+                TransportIcon.HEADPHONE -> {
+                    val stroke = h * 0.13f
+                    drawArc(
+                        color = color,
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = false,
+                        topLeft = Offset(w * 0.16f, h * 0.24f),
+                        size = Size(w * 0.68f, h * 0.68f),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    )
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(w * 0.08f, h * 0.54f),
+                        size = Size(w * 0.2f, h * 0.34f),
+                        cornerRadius = CornerRadius(w * 0.06f, w * 0.06f)
+                    )
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(w * 0.72f, h * 0.54f),
+                        size = Size(w * 0.2f, h * 0.34f),
+                        cornerRadius = CornerRadius(w * 0.06f, w * 0.06f)
+                    )
+                }
             }
         }
     }
