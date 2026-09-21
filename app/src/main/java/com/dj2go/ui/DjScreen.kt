@@ -1,5 +1,7 @@
 package com.dj2go.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -466,25 +469,30 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
 private fun LoadBrowseRow(state: DjState, actions: DjActions) {
     val accentA = Color(state.settings.deckAColor)
     val accentB = Color(state.settings.deckBColor)
-    val browseValue = if (state.library.isEmpty()) {
-        64
+    val browseTarget = if (state.library.isEmpty()) {
+        64f
     } else {
-        (state.libraryIndex * 127 / (state.library.size - 1).coerceAtLeast(1)).coerceIn(0, 127)
+        (state.libraryIndex * 127f / (state.library.size - 1).coerceAtLeast(1)).coerceIn(0f, 127f)
     }
+    val browseValue by animateFloatAsState(
+        targetValue = browseTarget,
+        animationSpec = tween(durationMillis = 220),
+        label = "browse"
+    )
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         TransportButton(
-            "LOAD 1", false, accentA,
+            "1", true, accentA,
             { actions.onLoad(Deck.A) },
             Modifier.weight(1f).height(30.dp)
         )
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Knob(
-                browseValue,
+                browseValue.roundToInt(),
                 if (state.showLibrary) accentA else Color(0xFFB0B0C8),
                 true,
                 Modifier.size(40.dp),
@@ -499,7 +507,7 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         }
         Spacer(Modifier.width(8.dp))
         TransportButton(
-            "LOAD 2", false, accentB,
+            "2", true, accentB,
             { actions.onLoad(Deck.B) },
             Modifier.weight(1f).height(30.dp)
         )
