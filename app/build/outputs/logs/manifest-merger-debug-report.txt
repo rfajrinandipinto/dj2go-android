@@ -1,20 +1,20 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:31:9-39:20
+INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:33:9-41:20
 	android:grantUriPermissions
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:35:13-47
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:37:13-47
 	android:authorities
 		INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:33:13-64
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:35:13-64
 	android:exported
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:34:13-37
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:36:13-37
 	android:name
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:32:13-62
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:34:13-62
 manifest
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-42:12
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-44:12
+INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-44:12
+INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-44:12
+INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:2:1-44:12
 MERGED from [com.google.android.material:material:1.12.0] /home/rfn/.gradle/caches/transforms-4/c9d15e9d70df66c2406e127d8b756a52/transformed/material-1.12.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.appcompat:appcompat-resources:1.7.0] /home/rfn/.gradle/caches/transforms-4/d04b4f126c04c55111ea971755a87333/transformed/appcompat-resources-1.7.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/rfn/.gradle/caches/transforms-4/28b8fe54b836bfd18a0f90946b78799e/transformed/constraintlayout-2.0.1/AndroidManifest.xml:2:1-11:12
@@ -111,8 +111,8 @@ ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:10:
 	android:name
 		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:11:9-45
 application
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:14:5-40:19
-INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:14:5-40:19
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:14:5-42:19
+INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:14:5-42:19
 MERGED from [com.google.android.material:material:1.12.0] /home/rfn/.gradle/caches/transforms-4/c9d15e9d70df66c2406e127d8b756a52/transformed/material-1.12.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.12.0] /home/rfn/.gradle/caches/transforms-4/c9d15e9d70df66c2406e127d8b756a52/transformed/material-1.12.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/rfn/.gradle/caches/transforms-4/28b8fe54b836bfd18a0f90946b78799e/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
@@ -136,39 +136,43 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/rfn/.gradle/caches/tr
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] /home/rfn/.gradle/caches/transforms-4/1eec0393bba75e2ee9a5fdc87d0708af/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:17:9-35
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:19:9-35
 	android:label
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:16:9-41
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:17:9-41
+	android:roundIcon
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:18:9-54
+	android:icon
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:16:9-43
 	android:allowBackup
 		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:15:9-35
 	android:theme
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:19:9-43
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:21:9-43
 	android:usesCleartextTraffic
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:18:9-44
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:20:9-44
 activity#com.dj2go.MainActivity
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:21:9-29:20
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:23:9-31:20
 	android:screenOrientation
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:24:13-56
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:26:13-56
 	android:exported
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:23:13-36
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:25:13-36
 	android:name
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:22:13-41
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:24:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:25:13-28:29
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:27:13-30:29
 action#android.intent.action.MAIN
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:26:17-69
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:28:17-69
 	android:name
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:26:25-66
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:28:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:27:17-77
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:29:17-77
 	android:name
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:27:27-74
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:29:27-74
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:36:13-38:54
+ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:38:13-40:54
 	android:resource
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:38:17-51
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:40:17-51
 	android:name
-		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:37:17-67
+		ADDED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml:39:17-67
 uses-sdk
 INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/rfn/Projects/dj2go-android/app/src/main/AndroidManifest.xml
