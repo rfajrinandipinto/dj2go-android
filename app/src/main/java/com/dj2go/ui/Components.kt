@@ -782,6 +782,26 @@ fun DialogButton(
     }
 }
 
+/** Outlined button: accent border with accent text. */
+@Composable
+fun OutlineButton(
+    label: String,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.5.dp, accent, RoundedCornerShape(6.dp))
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 fun <T> Dropdown(
     placeholder: String,

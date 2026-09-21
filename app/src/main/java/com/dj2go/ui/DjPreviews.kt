@@ -138,6 +138,7 @@ private fun previewActions(): DjActions = DjActions(
     onRescan = {},
     onLibrarySelect = {},
     onToggleLibrary = {},
+    onBrowseScroll = {},
     onTestTone = {},
     onOpenUpdate = {},
     onUpdateUrlChange = {},

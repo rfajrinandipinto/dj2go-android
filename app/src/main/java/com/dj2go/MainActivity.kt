@@ -169,6 +169,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         onRescan = { rescanLibrary() },
         onLibrarySelect = { index -> state.libraryIndex = index },
         onToggleLibrary = { state.showLibrary = !state.showLibrary },
+        onBrowseScroll = { delta -> moveSelection(delta) },
         onTestTone = { audio.playTestTone() },
         onOpenUpdate = { state.showUpdateDialog = true },
         onUpdateUrlChange = { url ->

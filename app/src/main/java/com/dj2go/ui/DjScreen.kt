@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +73,7 @@ class DjActions(
     val onRescan: () -> Unit,
     val onLibrarySelect: (Int) -> Unit,
     val onToggleLibrary: () -> Unit,
+    val onBrowseScroll: (Int) -> Unit,
     val onTestTone: () -> Unit,
     val onOpenUpdate: () -> Unit,
     val onUpdateUrlChange: (String) -> Unit,
@@ -484,20 +488,37 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        TransportButton(
-            "1", true, accentA,
+        OutlineButton(
+            "1", accentA,
             { actions.onLoad(Deck.A) },
             Modifier.weight(1f).height(30.dp)
         )
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Knob(
-                browseValue.roundToInt(),
-                if (state.showLibrary) accentA else Color(0xFFB0B0C8),
-                true,
-                Modifier.size(40.dp),
-                onClick = actions.onToggleLibrary
-            )
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .pointerInput(Unit) { detectTapGestures { actions.onToggleLibrary() } }
+                    .pointerInput(Unit) {
+                        var accumulated = 0f
+                        detectVerticalDragGestures { change, dragAmount ->
+                            change.consume()
+                            accumulated += dragAmount
+                            val steps = (accumulated / 8f).toInt()
+                            if (steps != 0) {
+                                actions.onBrowseScroll(steps)
+                                accumulated -= steps * 8f
+                            }
+                        }
+                    }
+            ) {
+                Knob(
+                    browseValue.roundToInt(),
+                    if (state.showLibrary) accentA else Color(0xFFB0B0C8),
+                    true,
+                    Modifier.fillMaxSize()
+                )
+            }
             Text(
                 "BROWSE",
                 color = if (state.showLibrary) accentA else MutedText,
@@ -506,8 +527,8 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
             )
         }
         Spacer(Modifier.width(8.dp))
-        TransportButton(
-            "2", true, accentB,
+        OutlineButton(
+            "2", accentB,
             { actions.onLoad(Deck.B) },
             Modifier.weight(1f).height(30.dp)
         )
