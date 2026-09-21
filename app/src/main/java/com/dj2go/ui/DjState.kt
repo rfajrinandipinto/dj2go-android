@@ -8,11 +8,19 @@ import com.dj2go.audio.BeatGrid
 import com.dj2go.audio.DeckPlayer
 import com.dj2go.audio.OutputDevices
 import com.dj2go.audio.WaveformData
+import com.dj2go.library.LibraryTrack
 import com.dj2go.midi.Deck
 import com.dj2go.midi.DeckState
 import com.dj2go.midi.Mixer
-import com.dj2go.library.LibraryTrack
-import com.dj2go.update.UpdateChecker
+
+/** What the big deck clock shows. */
+enum class TimeMode { ELAPSED, REMAINING, BEATS }
+
+fun TimeMode.next(): TimeMode = when (this) {
+    TimeMode.ELAPSED -> TimeMode.REMAINING
+    TimeMode.REMAINING -> TimeMode.BEATS
+    TimeMode.BEATS -> TimeMode.ELAPSED
+}
 
 /** Immutable snapshot of one deck for the UI. */
 data class DeckUi(
@@ -32,7 +40,14 @@ data class DeckUi(
     val bpm: Float = 0f,
     val positionFrames: Double = 0.0,
     val sampleRate: Int = 44100,
-    val level: Float = 0f
+    val level: Float = 0f,
+    val barBeat: String = "--",
+    val beatsToCue: Int = -1,
+    val hotCues: LongArray = LongArray(0),
+    val cuePositionFrames: Long = -1L,
+    val loopInFrames: Long = -1L,
+    val loopOutFrames: Long = -1L,
+    val phase: Float = 0f
 ) {
     val totalFrames: Int get() = (waveform?.bucketCount ?: 0) * (waveform?.bucketFrames ?: 1)
 }
@@ -42,10 +57,14 @@ class DjState {
     var deckA by mutableStateOf(DeckUi())
     var deckB by mutableStateOf(DeckUi())
     var crossfader by mutableStateOf(64)
+    var cueMix by mutableStateOf(0)
     var masterGain by mutableStateOf(100)
     var headphoneGain by mutableStateOf(100)
     var browse by mutableStateOf(0)
     var masterLevel by mutableStateOf(0f)
+
+    var timeModeA by mutableStateOf(TimeMode.ELAPSED)
+    var timeModeB by mutableStateOf(TimeMode.ELAPSED)
 
     var samplerNames by mutableStateOf<List<String>>(emptyList())
     var samplerPlaying by mutableStateOf<Set<Int>>(emptySet())
@@ -70,12 +89,13 @@ class DjState {
     var showUpdateDialog by mutableStateOf(false)
     var updateUrl by mutableStateOf("")
     var updateStatus by mutableStateOf("")
-    var updateInfo by mutableStateOf<UpdateChecker.UpdateInfo?>(null)
+    var updateInfo by mutableStateOf<com.dj2go.update.UpdateChecker.UpdateInfo?>(null)
 
     fun refresh(mixer: Mixer, audio: AudioEngine) {
         deckA = mixer.deckA.toUi(audio.deck(Deck.A), audio.levelA)
         deckB = mixer.deckB.toUi(audio.deck(Deck.B), audio.levelB)
         crossfader = mixer.crossfader
+        cueMix = mixer.cueMix
         masterGain = mixer.masterGain
         headphoneGain = mixer.headphoneGain
         browse = mixer.browse
@@ -85,22 +105,55 @@ class DjState {
     }
 }
 
-private fun DeckState.toUi(player: DeckPlayer, level: Float): DeckUi = DeckUi(
-    trackName = trackName,
-    playing = playing,
-    cue = cue,
-    sync = sync,
-    pfl = pfl,
-    rate = rate,
-    gain = gain,
-    positionMs = player.positionMs(),
-    durationMs = player.durationMs(),
-    loopActive = loopActive,
-    heldPads = heldPads.toSet(),
-    waveform = player.track?.waveform,
-    beatGrid = player.track?.beatGrid,
-    bpm = player.track?.beatGrid?.bpm ?: 0f,
-    positionFrames = player.positionFrames,
-    sampleRate = player.track?.sampleRate ?: 44100,
-    level = level
-)
+private fun DeckState.toUi(player: DeckPlayer, level: Float): DeckUi {
+    val grid = player.track?.beatGrid
+    val positionFrames = player.positionFrames
+
+    val barBeat = if (grid?.valid == true) {
+        val beatIndex =
+            Math.floor((positionFrames - grid.firstBeatFrames) / grid.periodFrames).toLong()
+        val bar = Math.floorDiv(beatIndex, 4L) + 1
+        val beat = Math.floorMod(beatIndex, 4L) + 1
+        "$bar.$beat"
+    } else {
+        "--"
+    }
+
+    val beatsToCue = if (grid?.valid == true) {
+        val next = player.hotCuePositions()
+            .filter { it >= 0 && it > positionFrames }
+            .minOrNull()
+        if (next != null) Math.ceil((next - positionFrames) / grid.periodFrames).toInt() else -1
+    } else {
+        -1
+    }
+
+    val phase = if (grid?.valid == true) grid.phase(positionFrames).toFloat() else 0f
+
+    return DeckUi(
+        trackName = trackName,
+        playing = playing,
+        cue = cue,
+        sync = sync,
+        pfl = pfl,
+        rate = rate,
+        gain = gain,
+        positionMs = player.positionMs(),
+        durationMs = player.durationMs(),
+        loopActive = loopActive,
+        heldPads = heldPads.toSet(),
+        waveform = player.track?.waveform,
+        beatGrid = grid,
+        bpm = grid?.bpm ?: 0f,
+        positionFrames = positionFrames,
+        sampleRate = player.track?.sampleRate ?: 44100,
+        level = level,
+        barBeat = barBeat,
+        beatsToCue = beatsToCue,
+        hotCues = player.hotCuePositions(),
+        cuePositionFrames = player.cuePositionFrames,
+        loopInFrames = player.loopInFrames,
+        loopOutFrames = player.loopOutFrames,
+        phase = phase
+    )
+}

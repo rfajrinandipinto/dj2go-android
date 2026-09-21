@@ -44,6 +44,7 @@ class AudioEngine(context: Context) {
     private val samplerR = FloatArray(BLOCK_FRAMES)
 
     @Volatile private var crossfader = 64
+    @Volatile private var cueMix = 0
     @Volatile private var masterGain = 100
     @Volatile private var headphoneGain = 100
 
@@ -147,6 +148,7 @@ class AudioEngine(context: Context) {
 
     fun handle(event: ControlEvent, mixer: Mixer) {
         crossfader = mixer.crossfader
+        cueMix = mixer.cueMix
         masterGain = mixer.masterGain
         headphoneGain = mixer.headphoneGain
         event.deck?.let { handleDeck(it, event, mixer) }
@@ -180,6 +182,8 @@ class AudioEngine(context: Context) {
             ControlId.LOOP_OUT -> if (event.pressed) player.setLoopOut()
             ControlId.LOOP_TOGGLE -> if (event.pressed) player.toggleLoop()
             ControlId.RELOOP_STOP -> if (event.pressed) player.stopLoop()
+            ControlId.BEAT_LOOP -> if (event.pressed) player.autoLoop(beatsForLoop(event.index))
+            ControlId.BEAT_JUMP -> if (event.pressed) player.beatJump(event.value)
             ControlId.SAMPLER -> if (event.pressed) {
                 val offset = if (deck == Deck.A) 0 else Sampler.SLOTS_PER_DECK
                 sampler.trigger(offset + event.index)
@@ -274,6 +278,7 @@ class AudioEngine(context: Context) {
         val angle = (crossfader / 127f) * (Math.PI / 2.0)
         val fadeA = cos(angle).toFloat() * master
         val fadeB = sin(angle).toFloat() * master
+        val cueMixFactor = cueMix / 127f
 
         var peakA = 0f
         var peakB = 0f
@@ -305,13 +310,17 @@ class AudioEngine(context: Context) {
             val idx = i * channels
             main[idx] = toShort(mL)
             main[idx + 1] = toShort(mR)
+
+            // Cue output blends between the PFL bus and the master mix.
+            val outCueL = cL + (mL - cL) * cueMixFactor
+            val outCueR = cR + (mR - cR) * cueMixFactor
             if (channels == 4) {
-                main[idx + 2] = toShort(cL)
-                main[idx + 3] = toShort(cR)
+                main[idx + 2] = toShort(outCueL)
+                main[idx + 3] = toShort(outCueR)
             }
             if (cue != null) {
-                cue[i * 2] = toShort(cL)
-                cue[i * 2 + 1] = toShort(cR)
+                cue[i * 2] = toShort(outCueL)
+                cue[i * 2 + 1] = toShort(outCueR)
             }
         }
 
@@ -434,6 +443,13 @@ class AudioEngine(context: Context) {
             scaled < -32768 -> Short.MIN_VALUE
             else -> scaled.toShort()
         }
+    }
+
+    private fun beatsForLoop(index: Int): Int = when (index) {
+        0 -> 1
+        1 -> 2
+        2 -> 4
+        else -> 8
     }
 
     companion object {

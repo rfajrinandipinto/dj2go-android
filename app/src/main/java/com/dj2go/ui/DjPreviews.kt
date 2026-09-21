@@ -117,7 +117,10 @@ private fun previewActions(): DjActions = DjActions(
     onOpenUpdate = {},
     onUpdateUrlChange = {},
     onCheckUpdate = {},
-    onInstallUpdate = {}
+    onInstallUpdate = {},
+    onCycleTime = {},
+    onBeatJump = { _, _ -> },
+    onCueMix = {}
 )
 
 private fun sampleWaveform(): WaveformData {

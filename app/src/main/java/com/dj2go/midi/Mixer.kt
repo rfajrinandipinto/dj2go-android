@@ -41,6 +41,7 @@ class Mixer {
     val deckB = DeckState()
 
     var crossfader = 64
+    var cueMix = 0
     var masterGain = 100
     var headphoneGain = 100
     var browse = 0
@@ -178,6 +179,16 @@ class Mixer {
             ControlId.BROWSE_PRESS -> {
                 if (!event.pressed) return null
                 "Browse press"
+            }
+
+            ControlId.BEAT_JUMP -> {
+                if (!event.pressed || target == null) return null
+                "$where BEAT JUMP ${event.value}"
+            }
+
+            ControlId.CUE_MIX -> {
+                cueMix = event.value
+                "Cue mix = ${event.value}"
             }
         }
     }

@@ -56,7 +56,10 @@ class DjActions(
     val onOpenUpdate: () -> Unit,
     val onUpdateUrlChange: (String) -> Unit,
     val onCheckUpdate: () -> Unit,
-    val onInstallUpdate: () -> Unit
+    val onInstallUpdate: () -> Unit,
+    val onCycleTime: (Deck) -> Unit,
+    val onBeatJump: (Deck, Int) -> Unit,
+    val onCueMix: (Int) -> Unit
 )
 
 @Composable
@@ -65,9 +68,9 @@ fun DjScreen(state: DjState, actions: DjActions) {
         Column(Modifier.fillMaxSize()) {
             TopBar(state, actions)
             Row(Modifier.weight(1f).fillMaxWidth()) {
-                DeckPanel(Deck.A, state.deckA, actions, Modifier.weight(1f))
+                DeckPanel(Deck.A, state.deckA, state, actions, Modifier.weight(1f))
                 MixerPanel(state, actions, Modifier.width(210.dp).fillMaxHeight())
-                DeckPanel(Deck.B, state.deckB, actions, Modifier.weight(1f))
+                DeckPanel(Deck.B, state.deckB, state, actions, Modifier.weight(1f))
             }
             LibraryPanel(state, actions, Modifier.fillMaxWidth().height(190.dp))
         }
@@ -125,8 +128,21 @@ private fun TopBar(state: DjState, actions: DjActions) {
 }
 
 @Composable
-private fun DeckPanel(deck: Deck, ui: DeckUi, actions: DjActions, modifier: Modifier) {
+private fun DeckPanel(
+    deck: Deck,
+    ui: DeckUi,
+    state: DjState,
+    actions: DjActions,
+    modifier: Modifier
+) {
     val accent = if (deck == Deck.A) DeckAAccent else DeckBAccent
+    val timeMode = if (deck == Deck.A) state.timeModeA else state.timeModeB
+    val timeText = when (timeMode) {
+        TimeMode.ELAPSED -> Mixer.formatTime(ui.positionMs)
+        TimeMode.REMAINING ->
+            "-" + Mixer.formatTime((ui.durationMs - ui.positionMs).coerceAtLeast(0L))
+        TimeMode.BEATS -> ui.barBeat
+    }
     Column(modifier.fillMaxHeight().padding(6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -151,13 +167,18 @@ private fun DeckPanel(deck: Deck, ui: DeckUi, actions: DjActions, modifier: Modi
             )
             Text(" BPM", color = MutedText, fontSize = 9.sp)
             Spacer(Modifier.width(8.dp))
-            Text(Mixer.formatTime(ui.positionMs), color = PrimaryText, fontSize = 12.sp)
-            Spacer(Modifier.width(6.dp))
+            Text(ui.barBeat, color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(8.dp))
             Text(
-                text = "-${Mixer.formatTime((ui.durationMs - ui.positionMs).coerceAtLeast(0L))}",
-                color = MutedText,
-                fontSize = 11.sp
+                text = timeText,
+                color = PrimaryText,
+                fontSize = 12.sp,
+                modifier = Modifier.clickable { actions.onCycleTime(deck) }
             )
+            if (ui.beatsToCue >= 0) {
+                Spacer(Modifier.width(6.dp))
+                Text("→${ui.beatsToCue}", color = MutedText, fontSize = 10.sp)
+            }
         }
 
         Spacer(Modifier.height(4.dp))
@@ -168,14 +189,36 @@ private fun DeckPanel(deck: Deck, ui: DeckUi, actions: DjActions, modifier: Modi
         )
 
         Spacer(Modifier.height(4.dp))
-        MainWaveform(
-            ui.waveform,
-            ui.beatGrid,
-            ui.positionFrames,
-            ui.sampleRate,
-            6f,
-            Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(4.dp))
-        )
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+            MainWaveform(
+                ui.waveform,
+                ui.beatGrid,
+                ui.positionFrames,
+                ui.sampleRate,
+                6f,
+                ui.hotCues,
+                ui.cuePositionFrames,
+                ui.loopInFrames,
+                ui.loopOutFrames,
+                accent,
+                Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
+            )
+            Text(
+                text = ui.barBeat,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
+            )
+            if (ui.beatsToCue >= 0) {
+                Text(
+                    text = "→ ${ui.beatsToCue}",
+                    color = accent,
+                    fontSize = 11.sp,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+                )
+            }
+        }
 
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth().height(150.dp)) {
@@ -183,7 +226,9 @@ private fun DeckPanel(deck: Deck, ui: DeckUi, actions: DjActions, modifier: Modi
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 TransportRow(deck, ui, accent, actions)
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(4.dp))
+                BeatJumpRow(deck, accent, actions)
+                Spacer(Modifier.height(4.dp))
                 PadGrid(deck, ui, accent, actions, Modifier.weight(1f))
             }
             Spacer(Modifier.width(8.dp))
@@ -241,11 +286,34 @@ private fun TransportRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActio
 }
 
 @Composable
+private fun BeatJumpRow(deck: Deck, accent: Color, actions: DjActions) {
+    Row(Modifier.fillMaxWidth().height(24.dp)) {
+        TransportButton(
+            "-4 BEAT", false, accent,
+            { actions.onBeatJump(deck, -4) },
+            Modifier.weight(1f).fillMaxHeight()
+        )
+        Spacer(Modifier.width(5.dp))
+        TransportButton(
+            "+4 BEAT", false, accent,
+            { actions.onBeatJump(deck, 4) },
+            Modifier.weight(1f).fillMaxHeight()
+        )
+    }
+}
+
+@Composable
 private fun PadGrid(deck: Deck, ui: DeckUi, accent: Color, actions: DjActions, modifier: Modifier) {
     Column(modifier.fillMaxWidth()) {
-        PadRow(deck, ui, accent, actions, ControlId.HOT_CUE, Modifier.weight(1f))
-        Spacer(Modifier.height(5.dp))
-        PadRow(deck, ui, accent, actions, ControlId.BEAT_LOOP, Modifier.weight(1f))
+        PadRow(
+            deck, ui, accent, actions, ControlId.HOT_CUE,
+            listOf("1", "2", "3", "4"), Modifier.weight(1f)
+        )
+        Spacer(Modifier.height(4.dp))
+        PadRow(
+            deck, ui, accent, actions, ControlId.BEAT_LOOP,
+            listOf("1", "2", "4", "8"), Modifier.weight(1f)
+        )
     }
 }
 
@@ -256,13 +324,14 @@ private fun PadRow(
     accent: Color,
     actions: DjActions,
     control: ControlId,
+    labels: List<String>,
     modifier: Modifier
 ) {
     Row(modifier.fillMaxWidth()) {
         for (index in 0 until 4) {
             val active = "${control.name}:$index" in ui.heldPads
             Pad(
-                label = "${index + 1}",
+                label = labels.getOrElse(index) { "${index + 1}" },
                 active = active,
                 accent = accent,
                 onClick = { actions.onPad(deck, control, index) },
@@ -285,12 +354,28 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
             ChannelStrip("2", DeckBAccent, state.deckB)
         }
         Spacer(Modifier.weight(1f))
-        Text("MASTER", color = MutedText, fontSize = 9.sp)
-        Spacer(Modifier.height(4.dp))
-        Row(Modifier.height(64.dp), verticalAlignment = Alignment.CenterVertically) {
-            Knob(state.masterGain, DeckAAccent, true, Modifier.size(36.dp))
-            Spacer(Modifier.width(10.dp))
-            VuMeter(state.masterLevel, Modifier.width(12.dp).fillMaxHeight())
+        Text("PHASE", color = MutedText, fontSize = 9.sp)
+        Spacer(Modifier.height(2.dp))
+        PhaseMeter(
+            state.deckA.phase,
+            state.deckB.phase,
+            Modifier.fillMaxWidth().height(12.dp)
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Knob(state.cueMix, Color(0xFFB0B0C8), true, Modifier.size(32.dp))
+                Text("CUE MIX", color = MutedText, fontSize = 8.sp)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Knob(state.masterGain, DeckAAccent, true, Modifier.size(32.dp))
+                Text("MASTER", color = MutedText, fontSize = 8.sp)
+            }
+            VuMeter(state.masterLevel, Modifier.width(12.dp).height(48.dp))
         }
         Spacer(Modifier.height(10.dp))
         Text("CROSSFADER", color = MutedText, fontSize = 9.sp)

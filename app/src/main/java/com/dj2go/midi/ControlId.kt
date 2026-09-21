@@ -38,8 +38,12 @@ enum class ControlId(val kind: ControlKind) {
     GAIN(ControlKind.FADER),
     JOG(ControlKind.ENCODER),
 
+    // Beat tools (UI driven)
+    BEAT_JUMP(ControlKind.BUTTON),
+
     // Mixer
     CROSSFADER(ControlKind.FADER),
+    CUE_MIX(ControlKind.FADER),
     MASTER_GAIN(ControlKind.FADER),
     HEADPHONE_GAIN(ControlKind.FADER),
 

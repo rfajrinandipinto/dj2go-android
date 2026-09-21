@@ -27,6 +27,7 @@ import com.dj2go.ui.Dj2GoTheme
 import com.dj2go.ui.DjActions
 import com.dj2go.ui.DjScreen
 import com.dj2go.ui.DjState
+import com.dj2go.ui.next
 import com.dj2go.update.UpdateChecker
 import java.io.File
 
@@ -169,7 +170,17 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
             saveUpdateUrl(url)
         },
         onCheckUpdate = { checkForUpdate() },
-        onInstallUpdate = { installUpdate() }
+        onInstallUpdate = { installUpdate() },
+        onCycleTime = { deck ->
+            if (deck == Deck.A) state.timeModeA = state.timeModeA.next()
+            else state.timeModeB = state.timeModeB.next()
+        },
+        onBeatJump = { deck, beats ->
+            dispatch(ControlEvent(deck, ControlId.BEAT_JUMP, beats, 0, true, 0, null))
+        },
+        onCueMix = { value ->
+            dispatch(ControlEvent(null, ControlId.CUE_MIX, value, 0, false, 0, null))
+        }
     )
 
     // ---- MIDI ----

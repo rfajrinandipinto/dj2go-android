@@ -134,6 +134,30 @@ class DeckPlayer {
         loopOutFrames = UNSET
     }
 
+    fun hotCuePositions(): LongArray = hotCues.copyOf()
+
+    val cuePositionFrames: Long get() = cuePointFrames
+
+    /** Set an auto-loop of [beats] beats starting at the next beat. */
+    fun autoLoop(beats: Int) {
+        val grid = track?.beatGrid ?: return
+        if (!grid.valid) return
+        val start = grid.nextBeat(positionFrames).toDouble()
+        loopInFrames = start.toLong()
+        loopOutFrames = (start + beats * grid.periodFrames).toLong()
+        loopActive = true
+    }
+
+    /** Jump forward/back by [beats] beats (negative = backwards). */
+    fun beatJump(beats: Int) {
+        val grid = track?.beatGrid
+        if (grid == null || !grid.valid) {
+            seekBy(beats * 500L)
+            return
+        }
+        seekRequest = (positionFrames + beats * grid.periodFrames).toLong()
+    }
+
     fun durationMs(): Long = track?.durationMs ?: 0L
 
     fun positionMs(): Long {

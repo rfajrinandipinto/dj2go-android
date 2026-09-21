@@ -46,6 +46,11 @@ fun MainWaveform(
     positionFrames: Double,
     sampleRate: Int,
     secondsVisible: Float,
+    cuePositions: LongArray,
+    cuePosition: Long,
+    loopIn: Long,
+    loopOut: Long,
+    accent: Color,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier) {
@@ -101,6 +106,38 @@ fun MainWaveform(
                 )
                 beatIndex += 1.0
                 beatFrame += period
+            }
+        }
+
+        if (loopIn >= 0 && loopOut > loopIn) {
+            val x1 = ((loopIn - positionFrames) / framesPerPixel + width / 2f).toFloat()
+            val x2 = ((loopOut - positionFrames) / framesPerPixel + width / 2f).toFloat()
+            drawRect(
+                color = accent.copy(alpha = 0.16f),
+                topLeft = Offset(minOf(x1, x2), 0f),
+                size = Size(kotlin.math.abs(x2 - x1), height)
+            )
+        }
+
+        cuePositions.forEachIndexed { index, frame ->
+            if (frame < 0) return@forEachIndexed
+            val cueX = ((frame - positionFrames) / framesPerPixel + width / 2f).toFloat()
+            if (cueX >= -4f && cueX <= width + 4f) {
+                val color = cueColors[index % cueColors.size]
+                drawLine(color, Offset(cueX, 0f), Offset(cueX, height), strokeWidth = 2f)
+                drawCircle(color, radius = 4f, center = Offset(cueX, 5f))
+            }
+        }
+
+        if (cuePosition >= 0) {
+            val cueX = ((cuePosition - positionFrames) / framesPerPixel + width / 2f).toFloat()
+            if (cueX >= -4f && cueX <= width + 4f) {
+                drawLine(
+                    Color(0xFFFFD400),
+                    Offset(cueX, 0f),
+                    Offset(cueX, height),
+                    strokeWidth = 2f
+                )
             }
         }
 
@@ -160,6 +197,38 @@ private fun bandColor(low: Int, mid: Int, high: Int): Color {
         blue = (h / sum).coerceIn(0f, 1f),
         alpha = 1f
     )
+}
+
+private val cueColors = listOf(
+    Color(0xFF4CAF50),
+    Color(0xFFFF9800),
+    Color(0xFF9C27B0),
+    Color(0xFF00BCD4)
+)
+
+/** Shows how far the two decks are out of phase (centre = locked). */
+@Composable
+fun PhaseMeter(phaseA: Float, phaseB: Float, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        drawRect(Color(0xFF14141C))
+        val midY = size.height / 2f
+        drawLine(
+            Color(0x33FFFFFF),
+            Offset(size.width / 2f, 0f),
+            Offset(size.width / 2f, size.height),
+            strokeWidth = 1f
+        )
+        var diff = phaseA - phaseB
+        if (diff > 0.5f) diff -= 1f
+        if (diff < -0.5f) diff += 1f
+        val x = (size.width / 2f + diff * size.width).coerceIn(0f, size.width)
+        val aligned = kotlin.math.abs(diff) < 0.03f
+        drawCircle(
+            color = if (aligned) Color(0xFF34C759) else Color(0xFFFFCC00),
+            radius = size.height * 0.35f,
+            center = Offset(x, midY)
+        )
+    }
 }
 
 // ---------------------------------------------------------------- jog / knobs

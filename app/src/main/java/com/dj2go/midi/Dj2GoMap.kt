@@ -25,14 +25,16 @@ object Dj2GoMap {
     private data class Binding(
         val deck: Deck?,
         val control: ControlId,
-        val index: Int = 0
+        val index: Int = 0,
+        val invert: Boolean = false
     )
 
     private val ccBindings: Map<Key, Binding> = buildMap {
-        put(Key(DECK_A, 0x09), Binding(Deck.A, ControlId.RATE))
+        // The DJ2GO2 Touch pitch faders send reversed values (see the Mixxx map).
+        put(Key(DECK_A, 0x09), Binding(Deck.A, ControlId.RATE, invert = true))
         put(Key(DECK_A, 0x16), Binding(Deck.A, ControlId.GAIN))
         put(Key(DECK_A, 0x06), Binding(Deck.A, ControlId.JOG))
-        put(Key(DECK_B, 0x09), Binding(Deck.B, ControlId.RATE))
+        put(Key(DECK_B, 0x09), Binding(Deck.B, ControlId.RATE, invert = true))
         put(Key(DECK_B, 0x16), Binding(Deck.B, ControlId.GAIN))
         put(Key(DECK_B, 0x06), Binding(Deck.B, ControlId.JOG))
         put(Key(GLOBAL, 0x00), Binding(null, ControlId.BROWSE))
@@ -112,6 +114,7 @@ object Dj2GoMap {
         return when (message.type) {
             MidiType.CONTROL_CHANGE -> {
                 val binding = ccBindings[key] ?: return null
+                val value = if (binding.invert) 127 - message.data2 else message.data2
                 val delta = if (binding.control.kind == ControlKind.ENCODER) {
                     relative(message.data2)
                 } else {
@@ -120,7 +123,7 @@ object Dj2GoMap {
                 ControlEvent(
                     deck = binding.deck,
                     control = binding.control,
-                    value = message.data2,
+                    value = value,
                     delta = delta,
                     pressed = false,
                     index = binding.index,
