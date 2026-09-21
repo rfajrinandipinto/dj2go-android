@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,7 +56,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.dj2go.audio.BeatGrid
 import com.dj2go.audio.WaveformData
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -890,6 +893,106 @@ fun OutlineButton(
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** Large tactile knob you rotate with a circular drag; calls back with a value delta. */
+@Composable
+fun BigKnob(
+    value: Int,
+    accent: Color,
+    onDelta: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val latestOnDelta by rememberUpdatedState(onDelta)
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    val twoPi = (2 * PI).toFloat()
+                    var lastAngle = 0f
+                    detectDragGestures(
+                        onDragStart = { position ->
+                            lastAngle = atan2(position.y - center.y, position.x - center.x)
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val angle = atan2(
+                                change.position.y - center.y,
+                                change.position.x - center.x
+                            )
+                            var delta = angle - lastAngle
+                            if (delta > PI.toFloat()) delta -= twoPi
+                            if (delta < -PI.toFloat()) delta += twoPi
+                            lastAngle = angle
+                            val step = (delta / twoPi * 127f).roundToInt()
+                            if (step != 0) latestOnDelta(step)
+                        }
+                    )
+                }
+        ) {
+            val radius = size.minDimension / 2f
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val fraction = (value / 127f).coerceIn(0f, 1f)
+
+            drawCircle(Color(0xFF15151F), radius = radius, center = center)
+            drawCircle(Color(0xFF242434), radius = radius * 0.9f, center = center)
+            drawArc(
+                color = accent,
+                startAngle = 135f,
+                sweepAngle = 270f * fraction,
+                useCenter = false,
+                topLeft = Offset(center.x - radius * 0.8f, center.y - radius * 0.8f),
+                size = Size(radius * 1.6f, radius * 1.6f),
+                style = Stroke(width = 5f)
+            )
+            for (i in 0..20) {
+                val t = i / 20f
+                val angle = Math.toRadians((135f + 270f * t).toDouble())
+                drawLine(
+                    color = if (t <= fraction) accent else Color(0xFF3A3A4C),
+                    start = Offset(
+                        center.x + (cos(angle) * radius * 0.66f).toFloat(),
+                        center.y + (sin(angle) * radius * 0.66f).toFloat()
+                    ),
+                    end = Offset(
+                        center.x + (cos(angle) * radius * 0.76f).toFloat(),
+                        center.y + (sin(angle) * radius * 0.76f).toFloat()
+                    ),
+                    strokeWidth = 2f
+                )
+            }
+            drawLine(
+                Color(0xFFE6E6F0).copy(alpha = 0.75f),
+                Offset(center.x, center.y - radius * 0.9f),
+                Offset(center.x, center.y - radius * 0.66f),
+                strokeWidth = 2f
+            )
+            val pointerAngle = Math.toRadians((135f + 270f * fraction).toDouble())
+            val inner = radius * 0.24f
+            val outer = radius * 0.55f
+            drawLine(
+                accent,
+                Offset(
+                    center.x + (cos(pointerAngle) * inner).toFloat(),
+                    center.y + (sin(pointerAngle) * inner).toFloat()
+                ),
+                Offset(
+                    center.x + (cos(pointerAngle) * outer).toFloat(),
+                    center.y + (sin(pointerAngle) * outer).toFloat()
+                ),
+                strokeWidth = 4f,
+                cap = StrokeCap.Round
+            )
+        }
+        Text(
+            text = "${(value * 100f / 127f).roundToInt()}%",
+            color = PrimaryText,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

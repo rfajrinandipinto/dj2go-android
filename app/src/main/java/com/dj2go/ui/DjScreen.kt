@@ -844,47 +844,50 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
         KnobId.CUE_MIX -> Color(0xFFB0B0C8)
     }
     val haptics = LocalHapticFeedback.current
-    var sliderSnapped by remember { mutableStateOf(false) }
+    var snapped by remember { mutableStateOf(false) }
+    fun applyValue(raw: Int) {
+        var next = raw.coerceIn(0, 127)
+        if (abs(next - 64) <= 3) {
+            next = 64
+            if (!snapped) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                snapped = true
+            }
+        } else {
+            snapped = false
+        }
+        actions.onKnobChange(knob, next)
+    }
     DjDialog(
         title = knob.label,
         accent = accent,
         onDismiss = { state.activeKnob = null }
     ) {
-        Text(
-            text = "${(value * 100f / 127f).roundToInt()}%",
-            color = PrimaryText,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(Modifier.height(8.dp))
-        Slider(
-            value = value.toFloat(),
-            onValueChange = {
-                var next = it.roundToInt().coerceIn(0, 127)
-                if (abs(next - 64) <= 3) {
-                    next = 64
-                    if (!sliderSnapped) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        sliderSnapped = true
-                    }
-                } else {
-                    sliderSnapped = false
-                }
-                actions.onKnobChange(knob, next)
-            },
-            valueRange = 0f..127f,
-            colors = SliderDefaults.colors(
-                thumbColor = accent,
-                activeTrackColor = accent,
-                inactiveTrackColor = Color(0xFF2A2A3A)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BigKnob(
+                value = value,
+                accent = accent,
+                onDelta = { delta -> applyValue(knobValue(state, knob) + delta) },
+                modifier = Modifier.size(140.dp)
             )
-        )
-        Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.width(22.dp))
+            VerticalFader(
+                value = value,
+                accent = accent,
+                onChange = { applyValue(it) },
+                modifier = Modifier.width(34.dp).height(140.dp)
+            )
+        }
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            DialogButton("-10", { actions.onKnobChange(knob, (value - 10).coerceIn(0, 127)) }, Modifier.weight(1f))
-            DialogButton("-1", { actions.onKnobChange(knob, (value - 1).coerceIn(0, 127)) }, Modifier.weight(1f))
-            DialogButton("+1", { actions.onKnobChange(knob, (value + 1).coerceIn(0, 127)) }, Modifier.weight(1f))
-            DialogButton("+10", { actions.onKnobChange(knob, (value + 10).coerceIn(0, 127)) }, Modifier.weight(1f))
+            DialogButton("-10", { applyValue(value - 10) }, Modifier.weight(1f))
+            DialogButton("-1", { applyValue(value - 1) }, Modifier.weight(1f))
+            DialogButton("+1", { applyValue(value + 1) }, Modifier.weight(1f))
+            DialogButton("+10", { applyValue(value + 10) }, Modifier.weight(1f))
         }
     }
 }
