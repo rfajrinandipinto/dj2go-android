@@ -74,6 +74,8 @@ class DjState {
     var timeModeA by mutableStateOf(TimeMode.ELAPSED)
     var timeModeB by mutableStateOf(TimeMode.ELAPSED)
     var activeKnob by mutableStateOf<KnobId?>(null)
+    var settings by mutableStateOf(DjSettings())
+    var showSettings by mutableStateOf(false)
 
     var samplerNames by mutableStateOf<List<String>>(emptyList())
     var samplerPlaying by mutableStateOf<Set<Int>>(emptySet())

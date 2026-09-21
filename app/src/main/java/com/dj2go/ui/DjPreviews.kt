@@ -147,7 +147,9 @@ private fun previewActions(): DjActions = DjActions(
     onBeatJump = { _, _ -> },
     onCueMix = {},
     onKnobTap = {},
-    onKnobChange = { _, _ -> }
+    onKnobChange = { _, _ -> },
+    onOpenSettings = {},
+    onSettingsChange = {}
 )
 
 private fun sampleWaveform(): WaveformData {

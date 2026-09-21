@@ -1,6 +1,7 @@
 package com.dj2go.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,18 +12,23 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +41,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dj2go.audio.CrossfaderCurve
 import com.dj2go.audio.OutputDevices
 import com.dj2go.midi.ControlId
 import com.dj2go.midi.Deck
@@ -68,7 +75,9 @@ class DjActions(
     val onBeatJump: (Deck, Int) -> Unit,
     val onCueMix: (Int) -> Unit,
     val onKnobTap: (KnobId) -> Unit,
-    val onKnobChange: (KnobId, Int) -> Unit
+    val onKnobChange: (KnobId, Int) -> Unit,
+    val onOpenSettings: () -> Unit,
+    val onSettingsChange: (DjSettings) -> Unit
 )
 
 @Composable
@@ -96,6 +105,7 @@ fun DjScreen(state: DjState, actions: DjActions) {
         }
         if (state.showLog) LogOverlay(state)
         if (state.showUpdateDialog) UpdateDialog(state, actions)
+        if (state.showSettings) SettingsDialog(state, actions)
         state.activeKnob?.let { KnobDialog(state, actions) }
     }
 }
@@ -135,6 +145,12 @@ private fun TopBar(state: DjState, actions: DjActions) {
             actions.onOpenUpdate,
             Modifier.width(70.dp).height(26.dp)
         )
+        Spacer(Modifier.width(6.dp))
+        TransportButton(
+            "SETTINGS", false, Color(0xFF3A3A4C),
+            actions.onOpenSettings,
+            Modifier.width(78.dp).height(26.dp)
+        )
         Spacer(Modifier.width(10.dp))
         Text(
             text = "LOG",
@@ -156,7 +172,8 @@ private fun DeckPanel(
     actions: DjActions,
     modifier: Modifier
 ) {
-    val accent = if (deck == Deck.A) DeckAAccent else DeckBAccent
+    val settings = state.settings
+    val accent = Color(if (deck == Deck.A) settings.deckAColor else settings.deckBColor)
     val timeMode = if (deck == Deck.A) state.timeModeA else state.timeModeB
     val loading = if (deck == Deck.A) state.loadingA else state.loadingB
     val timeText = when (timeMode) {
@@ -204,34 +221,43 @@ private fun DeckPanel(
         }
 
         Spacer(Modifier.height(4.dp))
-        OverviewWaveform(
-            ui.waveform,
-            ui.positionFrames,
-            Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(4.dp))
-        )
-
-        Spacer(Modifier.height(4.dp))
+        if (settings.showOverview) {
+            OverviewWaveform(
+                ui.waveform,
+                ui.positionFrames,
+                accent,
+                settings.colorMode,
+                Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(4.dp))
+            )
+            Spacer(Modifier.height(4.dp))
+        }
         Box(Modifier.fillMaxWidth().weight(1f)) {
             MainWaveform(
                 ui.waveform,
                 ui.beatGrid,
                 ui.positionFrames,
                 ui.sampleRate,
-                6f,
+                settings.secondsVisible,
                 ui.hotCues,
                 ui.cuePositionFrames,
                 ui.loopInFrames,
                 ui.loopOutFrames,
                 accent,
+                settings.colorMode,
+                settings.amplitudeScale,
+                settings.showBeatGrid,
+                settings.showCueMarkers,
                 Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
             )
-            Text(
-                text = ui.barBeat,
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
-            )
+            if (settings.showBarBeat) {
+                Text(
+                    text = ui.barBeat,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
+                )
+            }
             if (ui.beatsToCue >= 0) {
                 Text(
                     text = "→ ${ui.beatsToCue}",
@@ -398,8 +424,8 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
         Text("MIXER", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ChannelStrip("1", DeckAAccent, state.deckA, KnobId.GAIN_A, actions)
-            ChannelStrip("2", DeckBAccent, state.deckB, KnobId.GAIN_B, actions)
+            ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, KnobId.GAIN_A, actions)
+            ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, KnobId.GAIN_B, actions)
         }
         Spacer(Modifier.weight(1f))
         Text("PHASE", color = MutedText, fontSize = 9.sp)
@@ -424,7 +450,7 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Knob(
-                    state.masterGain, DeckAAccent, true, Modifier.size(32.dp),
+                    state.masterGain, Color(state.settings.deckAColor), true, Modifier.size(32.dp),
                     onClick = { actions.onKnobTap(KnobId.MASTER) }
                 )
                 Text("MASTER", color = MutedText, fontSize = 8.sp)
@@ -589,6 +615,150 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
                         fontSize = 11.sp
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDialog(state: DjState, actions: DjActions) {
+    val s = state.settings
+    AlertDialog(
+        onDismissRequest = { state.showSettings = false },
+        title = { Text("Settings", color = Color(s.deckAColor), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 430.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                SectionLabel("WAVEFORM")
+                OptionRow("Zoom", listOf(4f, 6f, 8f, 12f), s.secondsVisible, { "${it.toInt()}s" }) {
+                    actions.onSettingsChange(s.copy(secondsVisible = it))
+                }
+                OptionRow("Size", listOf(0.7f, 1f, 1.4f), s.amplitudeScale, {
+                    when (it) {
+                        0.7f -> "Small"
+                        1f -> "Normal"
+                        else -> "Large"
+                    }
+                }) { actions.onSettingsChange(s.copy(amplitudeScale = it)) }
+                OptionRow("Colour", WaveColorMode.values().toList(), s.colorMode, { it.label }) {
+                    actions.onSettingsChange(s.copy(colorMode = it))
+                }
+                ToggleRow("Beat grid", s.showBeatGrid) {
+                    actions.onSettingsChange(s.copy(showBeatGrid = it))
+                }
+                ToggleRow("Overview waveform", s.showOverview) {
+                    actions.onSettingsChange(s.copy(showOverview = it))
+                }
+                ToggleRow("Cue & loop markers", s.showCueMarkers) {
+                    actions.onSettingsChange(s.copy(showCueMarkers = it))
+                }
+                ToggleRow("Bar / beat overlay", s.showBarBeat) {
+                    actions.onSettingsChange(s.copy(showBarBeat = it))
+                }
+                SectionLabel("MIXER")
+                OptionRow(
+                    "Crossfader curve",
+                    CrossfaderCurve.values().toList(),
+                    s.crossfaderCurve,
+                    { it.label }
+                ) { actions.onSettingsChange(s.copy(crossfaderCurve = it)) }
+                OptionRow(
+                    "Tempo range",
+                    listOf(0.08f, 0.10f, 0.16f),
+                    s.tempoRange,
+                    { "±${(it * 100).toInt()}%" }
+                ) { actions.onSettingsChange(s.copy(tempoRange = it)) }
+                SectionLabel("DECK COLOURS")
+                ColorRow("Deck 1", s.deckAColor) {
+                    actions.onSettingsChange(s.copy(deckAColor = it))
+                }
+                ColorRow("Deck 2", s.deckBColor) {
+                    actions.onSettingsChange(s.copy(deckBColor = it))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { state.showSettings = false }) { Text("Done") }
+        }
+    )
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Spacer(Modifier.height(10.dp))
+    Text(text, color = DeckAAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    Spacer(Modifier.height(2.dp))
+}
+
+@Composable
+private fun <T> OptionRow(
+    label: String,
+    options: List<T>,
+    selected: T,
+    optionLabel: (T) -> String,
+    onSelect: (T) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(label, color = MutedText, fontSize = 11.sp)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.forEach { option ->
+                val active = option == selected
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (active) DeckAAccent else Color(0xFF23232F))
+                        .clickable { onSelect(option) }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = optionLabel(option),
+                        color = if (active) Color.Black else Color(0xFFD0D0E0),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = PrimaryText, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun ColorRow(label: String, selected: Long, onSelect: (Long) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(label, color = MutedText, fontSize = 11.sp)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SettingsStore.DECK_COLORS.forEach { colorLong ->
+                val active = colorLong == selected
+                Box(
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color(colorLong))
+                        .then(
+                            if (active) Modifier.border(2.dp, Color.White, CircleShape)
+                            else Modifier
+                        )
+                        .clickable { onSelect(colorLong) }
+                )
             }
         }
     }

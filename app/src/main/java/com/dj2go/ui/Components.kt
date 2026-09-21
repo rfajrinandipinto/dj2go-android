@@ -55,6 +55,10 @@ fun MainWaveform(
     loopIn: Long,
     loopOut: Long,
     accent: Color,
+    colorMode: WaveColorMode,
+    amplitudeScale: Float,
+    showBeatGrid: Boolean,
+    showCueMarkers: Boolean,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier) {
@@ -67,7 +71,7 @@ fun MainWaveform(
         val bucketFrames = waveform.bucketFrames
         val bucketCount = waveform.bucketCount
         val framesPerPixel = secondsVisible * sampleRate / width
-        val half = height * 0.46f
+        val half = height * 0.46f * amplitudeScale
 
         var x = 0f
         while (x < width) {
@@ -81,7 +85,7 @@ fun MainWaveform(
                 if (amplitude > 0.005f) {
                     val halfAmp = amplitude * half
                     drawLine(
-                        color = bandColor(low, mid, high),
+                        color = waveColor(colorMode, accent, low, mid, high),
                         start = Offset(x, midY - halfAmp),
                         end = Offset(x, midY + halfAmp),
                         strokeWidth = 1f
@@ -91,7 +95,7 @@ fun MainWaveform(
             x += 1f
         }
 
-        if (beatGrid != null && beatGrid.valid) {
+        if (showBeatGrid && beatGrid != null && beatGrid.valid) {
             val period = beatGrid.periodFrames
             val first = beatGrid.firstBeatFrames.toDouble()
             val startFrame = positionFrames - (width / 2f) * framesPerPixel
@@ -113,7 +117,7 @@ fun MainWaveform(
             }
         }
 
-        if (loopIn >= 0 && loopOut > loopIn) {
+        if (showCueMarkers && loopIn >= 0 && loopOut > loopIn) {
             val x1 = ((loopIn - positionFrames) / framesPerPixel + width / 2f).toFloat()
             val x2 = ((loopOut - positionFrames) / framesPerPixel + width / 2f).toFloat()
             drawRect(
@@ -123,25 +127,27 @@ fun MainWaveform(
             )
         }
 
-        cuePositions.forEachIndexed { index, frame ->
-            if (frame < 0) return@forEachIndexed
-            val cueX = ((frame - positionFrames) / framesPerPixel + width / 2f).toFloat()
-            if (cueX >= -4f && cueX <= width + 4f) {
-                val color = cueColors[index % cueColors.size]
-                drawLine(color, Offset(cueX, 0f), Offset(cueX, height), strokeWidth = 2f)
-                drawCircle(color, radius = 4f, center = Offset(cueX, 5f))
+        if (showCueMarkers) {
+            cuePositions.forEachIndexed { index, frame ->
+                if (frame < 0) return@forEachIndexed
+                val cueX = ((frame - positionFrames) / framesPerPixel + width / 2f).toFloat()
+                if (cueX >= -4f && cueX <= width + 4f) {
+                    val color = cueColors[index % cueColors.size]
+                    drawLine(color, Offset(cueX, 0f), Offset(cueX, height), strokeWidth = 2f)
+                    drawCircle(color, radius = 4f, center = Offset(cueX, 5f))
+                }
             }
-        }
 
-        if (cuePosition >= 0) {
-            val cueX = ((cuePosition - positionFrames) / framesPerPixel + width / 2f).toFloat()
-            if (cueX >= -4f && cueX <= width + 4f) {
-                drawLine(
-                    Color(0xFFFFD400),
-                    Offset(cueX, 0f),
-                    Offset(cueX, height),
-                    strokeWidth = 2f
-                )
+            if (cuePosition >= 0) {
+                val cueX = ((cuePosition - positionFrames) / framesPerPixel + width / 2f).toFloat()
+                if (cueX >= -4f && cueX <= width + 4f) {
+                    drawLine(
+                        Color(0xFFFFD400),
+                        Offset(cueX, 0f),
+                        Offset(cueX, height),
+                        strokeWidth = 2f
+                    )
+                }
             }
         }
 
@@ -154,6 +160,8 @@ fun MainWaveform(
 fun OverviewWaveform(
     waveform: WaveformData?,
     positionFrames: Double,
+    accent: Color,
+    colorMode: WaveColorMode,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier) {
@@ -176,7 +184,7 @@ fun OverviewWaveform(
             val halfAmp = (maxOf(low, mid, high) / 255f) * half
             if (halfAmp > 0.5f) {
                 drawLine(
-                    color = bandColor(low, mid, high),
+                    color = waveColor(colorMode, accent, low, mid, high),
                     start = Offset(x, midY - halfAmp),
                     end = Offset(x, midY + halfAmp),
                     strokeWidth = 1f
@@ -189,6 +197,13 @@ fun OverviewWaveform(
         drawLine(Color.White, Offset(playheadX, 0f), Offset(playheadX, height), strokeWidth = 2f)
     }
 }
+
+private fun waveColor(mode: WaveColorMode, accent: Color, low: Int, mid: Int, high: Int): Color =
+    when (mode) {
+        WaveColorMode.SPECTRUM -> bandColor(low, mid, high)
+        WaveColorMode.MONO -> Color(0xFFC8D0DC)
+        WaveColorMode.DECK -> accent
+    }
 
 private fun bandColor(low: Int, mid: Int, high: Int): Color {
     val l = low / 255f

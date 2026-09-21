@@ -28,6 +28,7 @@ import com.dj2go.ui.DjActions
 import com.dj2go.ui.DjScreen
 import com.dj2go.ui.DjState
 import com.dj2go.ui.KnobId
+import com.dj2go.ui.SettingsStore
 import com.dj2go.ui.next
 import com.dj2go.update.UpdateChecker
 import java.io.File
@@ -96,6 +97,8 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         audio = AudioEngine(this)
         audio.setLoadCallback(this)
         audio.setLogSink { message -> appendLog(message) }
+        state.settings = SettingsStore.load(this)
+        audio.applySettings(state.settings.crossfaderCurve, state.settings.tempoRange)
         refreshOutputs()
         loadLibraryFromPrefs()
         state.updateUrl = loadUpdateUrl()
@@ -197,6 +200,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
             // Update the mixer + audio without spamming the log while dragging.
             mixer.apply(event)
             audio.handle(event, mixer)
+        },
+        onOpenSettings = { state.showSettings = true },
+        onSettingsChange = { settings ->
+            state.settings = settings
+            SettingsStore.save(this, settings)
+            audio.applySettings(settings.crossfaderCurve, settings.tempoRange)
         }
     )
 

@@ -47,6 +47,8 @@ class AudioEngine(context: Context) {
     @Volatile private var cueMix = 0
     @Volatile private var masterGain = 100
     @Volatile private var headphoneGain = 100
+    @Volatile private var crossfaderCurve = CrossfaderCurve.SMOOTH
+    @Volatile private var tempoRange = 0.10f
 
     @Volatile
     var levelA = 0f
@@ -82,6 +84,11 @@ class AudioEngine(context: Context) {
 
     fun setLoadCallback(callback: LoadCallback?) {
         loadCallback = callback
+    }
+
+    fun applySettings(curve: CrossfaderCurve, range: Float) {
+        crossfaderCurve = curve
+        tempoRange = range
     }
 
     fun setLogSink(sink: ((String) -> Unit)?) {
@@ -170,7 +177,7 @@ class AudioEngine(context: Context) {
             ControlId.CUE -> if (event.pressed) player.cue()
             ControlId.SYNC -> if (event.pressed) syncToOther(deck, mixer)
             ControlId.PFL -> if (event.pressed) player.pfl = mixer.deck(deck).pfl
-            ControlId.RATE -> player.applySpeed(speedFromFader(event.value))
+            ControlId.RATE -> player.applySpeed(speedFromFader(event.value, tempoRange))
             ControlId.GAIN -> player.applyGain(event.value / 127f)
             ControlId.WHEEL_TOUCH -> if (event.pressed) player.wheelTouched = true else player.endScratch()
             ControlId.JOG -> {
@@ -203,7 +210,7 @@ class AudioEngine(context: Context) {
         val canBeatSync = thisGrid?.valid == true && otherGrid?.valid == true
 
         val targetSpeed = if (canBeatSync) {
-            (otherGrid!!.bpm / thisGrid!!.bpm).coerceIn(1f - SPEED_RANGE, 1f + SPEED_RANGE)
+            (otherGrid!!.bpm / thisGrid!!.bpm).coerceIn(1f - tempoRange, 1f + tempoRange)
         } else {
             other.speed
         }
@@ -220,7 +227,7 @@ class AudioEngine(context: Context) {
             player.seekRequest = (player.positionFrames + diff).toLong()
         }
 
-        val fader = speedToFader(targetSpeed)
+        val fader = speedToFader(targetSpeed, tempoRange)
         if (deck == Deck.A) mixer.deckA.rate = fader else mixer.deckB.rate = fader
     }
 
@@ -275,9 +282,21 @@ class AudioEngine(context: Context) {
     private fun mixBlock(channels: Int, main: ShortArray, cue: ShortArray?) {
         val master = masterGain / 127f
         val head = headphoneGain / 127f
-        val angle = (crossfader / 127f) * (Math.PI / 2.0)
-        val fadeA = cos(angle).toFloat() * master
-        val fadeB = sin(angle).toFloat() * master
+        val cross = crossfader / 127f
+        val (curveA, curveB) = when (crossfaderCurve) {
+            CrossfaderCurve.SMOOTH -> {
+                val angle = cross * (Math.PI / 2.0)
+                cos(angle).toFloat() to sin(angle).toFloat()
+            }
+            CrossfaderCurve.LINEAR -> (1f - cross) to cross
+            CrossfaderCurve.SHARP -> {
+                val a = if (cross < 0.5f) 1f else (1f - cross) * 2f
+                val b = if (cross > 0.5f) 1f else cross * 2f
+                a to b
+            }
+        }
+        val fadeA = curveA * master
+        val fadeB = curveB * master
         val cueMixFactor = cueMix / 127f
 
         var peakA = 0f
@@ -455,13 +474,12 @@ class AudioEngine(context: Context) {
     companion object {
         const val SAMPLE_RATE = 44100
         const val BLOCK_FRAMES = 1024
-        const val SPEED_RANGE = 0.10f
         private const val SCRATCH_SECONDS_PER_TICK = 0.03
         private const val SCRATCH_TIMEOUT_NS = 120_000_000L
 
-        fun speedFromFader(value: Int): Float = 1f + (value - 64) / 64f * SPEED_RANGE
+        fun speedFromFader(value: Int, range: Float): Float = 1f + (value - 64) / 64f * range
 
-        fun speedToFader(speed: Float): Int =
-            ((speed - 1f) / SPEED_RANGE * 64f + 64f).roundToInt().coerceIn(0, 127)
+        fun speedToFader(speed: Float, range: Float): Int =
+            ((speed - 1f) / range * 64f + 64f).roundToInt().coerceIn(0, 127)
     }
 }
