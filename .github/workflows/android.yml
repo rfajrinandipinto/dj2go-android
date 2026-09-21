@@ -24,6 +24,14 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install SDK packages and accept licenses
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Point Gradle at the SDK
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
@@ -36,7 +44,7 @@ jobs:
           fi
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -51,15 +59,18 @@ jobs:
           DJ2GO_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           DJ2GO_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           DJ2GO_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Prepare release APK
+      - name: Collect APK
         if: startsWith(github.ref, 'refs/tags/')
-        run: cp app/build/outputs/apk/release/app-release.apk "dj2go-${GITHUB_REF_NAME}.apk"
+        run: |
+          ls -R app/build/outputs/apk/release
+          cp app/build/outputs/apk/release/app-release.apk "dj2go-${GITHUB_REF_NAME}.apk"
+          ls -l dj2go-*.apk
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dj2go-*.apk
-          generate_release_notes: true
+          fail_on_unmatched_files: true
