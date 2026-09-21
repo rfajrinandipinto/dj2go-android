@@ -794,8 +794,7 @@ fun OutlineButton(
         modifier
             .clip(RoundedCornerShape(6.dp))
             .border(1.5.dp, accent, RoundedCornerShape(6.dp))
-            .clickable { onClick() }
-            .padding(vertical = 8.dp),
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)

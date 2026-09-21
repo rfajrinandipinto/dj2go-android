@@ -481,13 +481,13 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
     )
     Row(
         Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         OutlineButton(
             "1", accentA,
             { actions.onLoad(Deck.A) },
-            Modifier.weight(1f).height(30.dp)
+            Modifier.weight(1f).height(42.dp)
         )
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -528,7 +528,7 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         OutlineButton(
             "2", accentB,
             { actions.onLoad(Deck.B) },
-            Modifier.weight(1f).height(30.dp)
+            Modifier.weight(1f).height(42.dp)
         )
     }
 }
