@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">DJ2GO</string>
+    <string name="status_idle">Looking for a USB MIDI controller...</string>
+    <string name="btn_refresh">Refresh devices</string>
+    <string name="btn_clear">Clear log</string>
+    <string name="btn_load_a">Load Deck A</string>
+    <string name="btn_load_b">Load Deck B</string>
+    <string name="label_output">Master output</string>
+    <string name="label_cue_output">Cue / headphone output</string>
+    <string name="label_state">Live controls</string>
+    <string name="label_log">MIDI monitor</string>
+</resources>

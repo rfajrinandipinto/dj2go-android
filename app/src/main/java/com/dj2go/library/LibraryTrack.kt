@@ -1,0 +1,7 @@
+package com.dj2go.library
+
+/** One track in the crate. */
+data class LibraryTrack(
+    val uri: String,
+    val name: String
+)
