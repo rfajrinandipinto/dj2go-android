@@ -99,7 +99,8 @@ class DjActions(
     val onKnobChange: (KnobId, Int) -> Unit,
     val onOpenSettings: () -> Unit,
     val onSettingsChange: (DjSettings) -> Unit,
-    val onToggleRecord: () -> Unit
+    val onToggleRecord: () -> Unit,
+    val onSeek: (Deck, Float) -> Unit
 )
 
 @Composable
@@ -178,6 +179,7 @@ private fun DeckPanel(
             "-" + Mixer.formatTime((ui.durationMs - ui.positionMs).coerceAtLeast(0L))
         TimeMode.BEATS -> ui.barBeat
     }
+    val nearEnd = ui.durationMs > 0L && ui.durationMs - ui.positionMs < 20_000L
     Column(modifier.fillMaxHeight().padding(6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -214,7 +216,7 @@ private fun DeckPanel(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = timeText,
-                color = PrimaryText,
+                color = if (nearEnd) Color(0xFFFF3B30) else PrimaryText,
                 fontSize = 12.sp,
                 modifier = Modifier.clickable { actions.onCycleTime(deck) }
             )
@@ -231,7 +233,8 @@ private fun DeckPanel(
                 ui.positionFrames,
                 accent,
                 settings.colorMode,
-                Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(4.dp))
+                onSeek = { fraction -> actions.onSeek(deck, fraction) },
+                modifier = Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(4.dp))
             )
             Spacer(Modifier.height(4.dp))
         }

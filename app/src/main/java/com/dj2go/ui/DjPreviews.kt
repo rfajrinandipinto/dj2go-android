@@ -151,7 +151,8 @@ private fun previewActions(): DjActions = DjActions(
     onKnobChange = { _, _ -> },
     onOpenSettings = {},
     onSettingsChange = {},
-    onToggleRecord = {}
+    onToggleRecord = {},
+    onSeek = { _, _ -> }
 )
 
 private fun sampleWaveform(): WaveformData {

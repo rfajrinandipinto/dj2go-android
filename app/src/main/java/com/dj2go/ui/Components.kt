@@ -221,9 +221,17 @@ fun OverviewWaveform(
     positionFrames: Double,
     accent: Color,
     colorMode: WaveColorMode,
+    onSeek: ((Float) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier) {
+    val seekModifier = if (onSeek != null) {
+        Modifier.pointerInput(Unit) {
+            detectTapGestures { offset -> onSeek(offset.x / size.width.toFloat()) }
+        }
+    } else {
+        Modifier
+    }
+    Canvas(modifier.then(seekModifier)) {
         drawRect(color = Color(0xFF0D0D16))
         val width = size.width
         val height = size.height

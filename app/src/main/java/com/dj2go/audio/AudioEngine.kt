@@ -158,6 +158,13 @@ class AudioEngine(context: Context) {
 
     fun samplerPlaying(): Set<Int> = sampler.playingIndices()
 
+    /** Jump a deck to a fraction (0..1) of its track (needle-drop). */
+    fun seekToFraction(deck: Deck, fraction: Float) {
+        val player = deck(deck)
+        val track = player.track ?: return
+        player.seekRequest = (fraction.coerceIn(0f, 1f) * track.frameCount).toLong()
+    }
+
     // ---- mix recording ----
 
     fun isRecording(): Boolean = recordingFlag

@@ -230,7 +230,8 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
                     appendLog("!! could not start recording")
                 }
             }
-        }
+        },
+        onSeek = { deck, fraction -> audio.seekToFraction(deck, fraction) }
     )
 
     // ---- MIDI ----
