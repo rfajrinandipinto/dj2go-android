@@ -16,7 +16,7 @@ import kotlin.math.sin
 @Composable
 private fun DjScreenPreview() {
     Dj2GoTheme {
-        DjScreen(state = previewState(), actions = previewActions())
+        DjScreen(state = previewState(showLibrary = true), actions = previewActions())
     }
 }
 
@@ -28,7 +28,8 @@ private fun DjScreenSmallPreview() {
     }
 }
 
-private fun previewState(): DjState = DjState().apply {
+private fun previewState(showLibrary: Boolean = false): DjState = DjState().apply {
+    this.showLibrary = showLibrary
     val wave = sampleWaveform()
     val posA = 74_000.0 / 1000.0 * 44100.0
     val posB = 12_000.0 / 1000.0 * 44100.0
