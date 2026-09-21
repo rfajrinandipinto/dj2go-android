@@ -77,6 +77,10 @@ class DjState {
 
     var samplerNames by mutableStateOf<List<String>>(emptyList())
     var samplerPlaying by mutableStateOf<Set<Int>>(emptySet())
+    var loadingSampler by mutableStateOf<Set<Int>>(emptySet())
+
+    var loadingA by mutableStateOf(false)
+    var loadingB by mutableStateOf(false)
 
     var connected by mutableStateOf(false)
     var deviceName by mutableStateOf("No controller")

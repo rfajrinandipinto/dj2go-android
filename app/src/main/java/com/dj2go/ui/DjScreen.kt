@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -157,6 +158,7 @@ private fun DeckPanel(
 ) {
     val accent = if (deck == Deck.A) DeckAAccent else DeckBAccent
     val timeMode = if (deck == Deck.A) state.timeModeA else state.timeModeB
+    val loading = if (deck == Deck.A) state.loadingA else state.loadingB
     val timeText = when (timeMode) {
         TimeMode.ELAPSED -> Mixer.formatTime(ui.positionMs)
         TimeMode.REMAINING ->
@@ -237,6 +239,27 @@ private fun DeckPanel(
                     fontSize = 11.sp,
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
                 )
+            }
+            if (loading) {
+                Box(
+                    Modifier.fillMaxSize().background(Color(0xCC07070B)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            color = accent,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(34.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "DECODING",
+                            color = accent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
 
@@ -492,6 +515,7 @@ private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier)
                     label = if (name.isNotEmpty()) name.take(9) else "S${index + 1}",
                     active = index in state.samplerPlaying,
                     loaded = name.isNotEmpty(),
+                    loading = index in state.loadingSampler,
                     accent = if (index < 4) DeckAAccent else DeckBAccent,
                     onTrigger = { actions.onSamplerTrigger(index) },
                     onAssign = { actions.onSamplerAssign(index) },

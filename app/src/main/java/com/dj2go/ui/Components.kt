@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -582,6 +583,7 @@ fun SamplerPad(
     label: String,
     active: Boolean,
     loaded: Boolean,
+    loading: Boolean,
     accent: Color,
     onTrigger: () -> Unit,
     onAssign: () -> Unit,
@@ -600,17 +602,25 @@ fun SamplerPad(
             .combinedClickable(onClick = onTrigger, onLongClick = onAssign),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            color = when {
-                active -> Color.Black
-                loaded -> PrimaryText
-                else -> MutedText
-            },
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                color = if (active) Color.Black else accent,
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(14.dp)
+            )
+        } else {
+            Text(
+                text = label,
+                color = when {
+                    active -> Color.Black
+                    loaded -> PrimaryText
+                    else -> MutedText
+                },
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+        }
     }
 }
 

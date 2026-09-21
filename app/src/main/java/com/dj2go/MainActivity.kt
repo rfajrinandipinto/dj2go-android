@@ -68,6 +68,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             val index = pendingSampler
             if (uri != null && index != null) {
+                state.loadingSampler = state.loadingSampler + index
                 appendLog("-- decoding sampler slot ${index + 1}... --")
                 audio.loadSample(index, uri, displayName(uri))
             }
@@ -300,11 +301,16 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         state.showLibrary = false
         val track = state.library.getOrNull(state.libraryIndex)
         if (track != null) {
+            markLoading(deck, true)
             appendLog("-- decoding '${track.name}' for Deck $deck... --")
             audio.load(deck, Uri.parse(track.uri))
         } else {
             chooseTrack(deck)
         }
+    }
+
+    private fun markLoading(deck: Deck, loading: Boolean) {
+        if (deck == Deck.A) state.loadingA = loading else state.loadingB = loading
     }
 
     // ---- Self-hosted updates ----
@@ -397,6 +403,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
     // ---- Audio loading ----
 
     override fun onLoaded(deck: Deck, uri: Uri, durationMs: Long) {
+        markLoading(deck, false)
         val name = displayName(uri)
         val deckState = mixer.deck(deck)
         deckState.trackName = name
@@ -406,19 +413,23 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
     }
 
     override fun onError(deck: Deck, message: String) {
+        markLoading(deck, false)
         appendLog("!! Deck $deck load failed: $message")
     }
 
     override fun onSampleLoaded(index: Int, name: String) {
+        state.loadingSampler = state.loadingSampler - index
         appendLog("-- sampler ${index + 1}: $name --")
         state.refresh(mixer, audio)
     }
 
     override fun onSampleError(index: Int, message: String) {
+        state.loadingSampler = state.loadingSampler - index
         appendLog("!! sampler ${index + 1} failed: $message")
     }
 
     private fun startLoad(deck: Deck, uri: Uri) {
+        markLoading(deck, true)
         appendLog("-- decoding for Deck $deck... --")
         audio.load(deck, uri)
     }
