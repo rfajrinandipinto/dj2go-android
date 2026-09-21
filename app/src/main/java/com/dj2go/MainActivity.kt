@@ -215,6 +215,21 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
             state.settings = settings
             SettingsStore.save(this, settings)
             audio.applySettings(settings.crossfaderCurve, settings.tempoRange)
+        },
+        onToggleRecord = {
+            if (state.recording) {
+                audio.stopRecording()
+                state.recording = false
+                appendLog("-- recording stopped --")
+            } else {
+                val path = audio.startRecording()
+                if (path != null) {
+                    state.recording = true
+                    appendLog("-- recording to $path --")
+                } else {
+                    appendLog("!! could not start recording")
+                }
+            }
         }
     )
 

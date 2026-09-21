@@ -90,6 +90,7 @@ class DjState {
     var activeKnob by mutableStateOf<KnobId?>(null)
     var settings by mutableStateOf(DjSettings())
     var showSettings by mutableStateOf(false)
+    var recording by mutableStateOf(false)
 
     var samplerNames by mutableStateOf<List<String>>(emptyList())
     var samplerPlaying by mutableStateOf<Set<Int>>(emptySet())

@@ -70,6 +70,11 @@ class AudioEngine(context: Context) {
 
     @Volatile private var running = false
     private var loadCallback: LoadCallback? = null
+
+    @Volatile private var recordingFlag = false
+    private var recordFile: java.io.RandomAccessFile? = null
+    private var recordDataBytes = 0L
+    private val recordBuffer = ByteArray(BLOCK_FRAMES * 4)
     private var logSink: ((String) -> Unit)? = null
 
     @Volatile private var toneFrames = 0
@@ -152,6 +157,100 @@ class AudioEngine(context: Context) {
     fun samplerNames(): List<String> = sampler.names()
 
     fun samplerPlaying(): Set<Int> = sampler.playingIndices()
+
+    // ---- mix recording ----
+
+    fun isRecording(): Boolean = recordingFlag
+
+    fun startRecording(): String? {
+        if (recordingFlag) return null
+        return try {
+            val dir = java.io.File(appContext.getExternalFilesDir(null), "recordings")
+            dir.mkdirs()
+            val file = java.io.File(dir, "mix-${System.currentTimeMillis()}.wav")
+            val raf = java.io.RandomAccessFile(file, "rw")
+            raf.setLength(0)
+            raf.write(wavHeader(0L))
+            recordFile = raf
+            recordDataBytes = 0L
+            recordingFlag = true
+            file.absolutePath
+        } catch (t: Throwable) {
+            recordFile = null
+            null
+        }
+    }
+
+    fun stopRecording() {
+        if (!recordingFlag) return
+        recordingFlag = false
+        val raf = recordFile ?: return
+        recordFile = null
+        runCatching {
+            raf.seek(4L)
+            raf.write(intLe(36 + recordDataBytes))
+            raf.seek(40L)
+            raf.write(intLe(recordDataBytes))
+            raf.close()
+        }
+    }
+
+    private fun recordBlock(main: ShortArray, channels: Int) {
+        val raf = recordFile ?: return
+        var bi = 0
+        var i = 0
+        while (i < BLOCK_FRAMES) {
+            val idx = i * channels
+            val l = main[idx].toInt()
+            val r = main[idx + 1].toInt()
+            recordBuffer[bi++] = (l and 0xFF).toByte()
+            recordBuffer[bi++] = ((l shr 8) and 0xFF).toByte()
+            recordBuffer[bi++] = (r and 0xFF).toByte()
+            recordBuffer[bi++] = ((r shr 8) and 0xFF).toByte()
+            i++
+        }
+        runCatching { raf.write(recordBuffer, 0, bi) }
+        recordDataBytes += bi
+    }
+
+    private fun wavHeader(dataBytes: Long): ByteArray {
+        val header = ByteArray(44)
+        val riff = 36 + dataBytes
+        fun putString(offset: Int, text: String) {
+            text.forEachIndexed { i, c -> header[offset + i] = c.code.toByte() }
+        }
+        fun putInt(offset: Int, value: Long) {
+            header[offset] = (value and 0xFF).toByte()
+            header[offset + 1] = ((value shr 8) and 0xFF).toByte()
+            header[offset + 2] = ((value shr 16) and 0xFF).toByte()
+            header[offset + 3] = ((value shr 24) and 0xFF).toByte()
+        }
+        fun putShort(offset: Int, value: Int) {
+            header[offset] = (value and 0xFF).toByte()
+            header[offset + 1] = ((value shr 8) and 0xFF).toByte()
+        }
+        putString(0, "RIFF")
+        putInt(4, riff)
+        putString(8, "WAVE")
+        putString(12, "fmt ")
+        putInt(16, 16)
+        putShort(20, 1)
+        putShort(22, 2)
+        putInt(24, SAMPLE_RATE.toLong())
+        putInt(28, (SAMPLE_RATE * 2 * 2).toLong())
+        putShort(32, 4)
+        putShort(34, 16)
+        putString(36, "data")
+        putInt(40, dataBytes)
+        return header
+    }
+
+    private fun intLe(value: Long): ByteArray = byteArrayOf(
+        (value and 0xFF).toByte(),
+        ((value shr 8) and 0xFF).toByte(),
+        ((value shr 16) and 0xFF).toByte(),
+        ((value shr 24) and 0xFF).toByte()
+    )
 
     fun handle(event: ControlEvent, mixer: Mixer) {
         crossfader = mixer.crossfader
@@ -353,6 +452,8 @@ class AudioEngine(context: Context) {
         levelA = peakA.coerceIn(0f, 1f)
         levelB = peakB.coerceIn(0f, 1f)
         levelMaster = peakMaster.coerceIn(0f, 1f)
+
+        if (recordingFlag) recordBlock(main, channels)
     }
 
     private fun sampleDeck(deck: DeckPlayer, masterFactor: Float, headFactor: Float) {

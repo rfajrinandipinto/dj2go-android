@@ -97,7 +97,8 @@ class DjActions(
     val onKnobTap: (KnobId) -> Unit,
     val onKnobChange: (KnobId, Int) -> Unit,
     val onOpenSettings: () -> Unit,
-    val onSettingsChange: (DjSettings) -> Unit
+    val onSettingsChange: (DjSettings) -> Unit,
+    val onToggleRecord: () -> Unit
 )
 
 @Composable
@@ -766,6 +767,11 @@ private fun SettingsDialog(state: DjState, actions: DjActions) {
                 SectionLabel("TOOLS")
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     DialogButton("TEST TONE", { actions.onTestTone() }, Modifier.weight(1f))
+                    DialogButton(
+                        if (state.recording) "STOP REC" else "RECORD",
+                        { actions.onToggleRecord() },
+                        Modifier.weight(1f)
+                    )
                     DialogButton(
                         "UPDATE",
                         {
