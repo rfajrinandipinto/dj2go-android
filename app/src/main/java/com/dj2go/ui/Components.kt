@@ -741,7 +741,6 @@ fun DjDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
                 .background(Color(0xFF0D0D16))
-                .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                 .padding(16.dp)
         ) {
             Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 16.sp)
