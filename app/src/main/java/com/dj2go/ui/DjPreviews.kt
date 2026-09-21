@@ -30,6 +30,8 @@ private fun DjScreenSmallPreview() {
 
 private fun previewState(): DjState = DjState().apply {
     val wave = sampleWaveform()
+    val posA = 74_000.0 / 1000.0 * 44100.0
+    val posB = 12_000.0 / 1000.0 * 44100.0
     deckA = DeckUi(
         trackName = "Midnight Drive",
         playing = true,
@@ -43,9 +45,21 @@ private fun previewState(): DjState = DjState().apply {
         waveform = wave,
         beatGrid = BeatGrid(124f, 0L, 44100.0 * 60.0 / 124.0),
         bpm = 124f,
-        positionFrames = 74_000.0 / 1000.0 * 44100.0,
+        positionFrames = posA,
         sampleRate = 44100,
-        level = 0.62f
+        level = 0.62f,
+        barBeat = "33.2",
+        beatsToCue = 12,
+        hotCues = longArrayOf(
+            (posA - 60_000).toLong(),
+            (posA + 20_000).toLong(),
+            (posA + 90_000).toLong(),
+            -1L
+        ),
+        cuePositionFrames = (posA - 40_000).toLong(),
+        loopInFrames = (posA - 30_000).toLong(),
+        loopOutFrames = (posA + 40_000).toLong(),
+        phase = 0.12f
     )
     deckB = DeckUi(
         trackName = "Neon Skyline",
@@ -60,11 +74,19 @@ private fun previewState(): DjState = DjState().apply {
         waveform = wave,
         beatGrid = BeatGrid(128f, 22050L, 44100.0 * 60.0 / 128.0),
         bpm = 128f,
-        positionFrames = 12_000.0 / 1000.0 * 44100.0,
+        positionFrames = posB,
         sampleRate = 44100,
-        level = 0.35f
+        level = 0.35f,
+        barBeat = "9.4",
+        beatsToCue = 4,
+        hotCues = longArrayOf((posB + 40_000).toLong(), -1L, -1L, -1L),
+        cuePositionFrames = (posB - 20_000).toLong(),
+        loopInFrames = -1L,
+        loopOutFrames = -1L,
+        phase = 0.44f
     )
     crossfader = 42
+    cueMix = 30
     masterGain = 100
     headphoneGain = 90
     masterLevel = 0.7f
