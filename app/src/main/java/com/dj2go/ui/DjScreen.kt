@@ -5,8 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -473,15 +474,10 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
 private fun LoadBrowseRow(state: DjState, actions: DjActions) {
     val accentA = Color(state.settings.deckAColor)
     val accentB = Color(state.settings.deckBColor)
-    val browseTarget = if (state.library.isEmpty()) {
-        64f
-    } else {
-        (state.libraryIndex * 127f / (state.library.size - 1).coerceAtLeast(1)).coerceIn(0f, 127f)
-    }
-    val browseValue by animateFloatAsState(
-        targetValue = browseTarget,
-        animationSpec = tween(durationMillis = 220),
-        label = "browse"
+    val browseAngle by animateFloatAsState(
+        targetValue = state.browseAngle,
+        animationSpec = tween(durationMillis = 140),
+        label = "browseAngle"
     )
     Row(
         Modifier.fillMaxWidth(),
@@ -498,7 +494,10 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
             Box(
                 Modifier
                     .size(42.dp)
-                    .pointerInput(Unit) { detectTapGestures { actions.onToggleLibrary() } }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { actions.onToggleLibrary() }
                     .pointerInput(Unit) {
                         var accumulated = 0f
                         detectVerticalDragGestures { change, dragAmount ->
@@ -512,10 +511,9 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
                         }
                     }
             ) {
-                Knob(
-                    browseValue.roundToInt(),
+                RotaryKnob(
+                    browseAngle,
                     if (state.showLibrary) accentA else Color(0xFFB0B0C8),
-                    true,
                     Modifier.fillMaxSize()
                 )
             }

@@ -303,6 +303,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
     }
 
     private fun moveSelection(delta: Int) {
+        state.browseAngle += delta * 24f
         if (state.library.isEmpty()) return
         state.libraryIndex = (state.libraryIndex + delta).coerceIn(0, state.library.size - 1)
     }

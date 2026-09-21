@@ -101,6 +101,7 @@ class DjState {
     var libraryFolderLabel by mutableStateOf("No folder selected")
     var libraryScanning by mutableStateOf(false)
     var showLibrary by mutableStateOf(false)
+    var browseAngle by mutableStateOf(0f)
 
     var showUpdateDialog by mutableStateOf(false)
     var updateUrl by mutableStateOf("")

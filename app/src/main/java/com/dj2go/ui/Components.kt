@@ -802,6 +802,44 @@ fun OutlineButton(
     }
 }
 
+/** Endless-encoder style knob: rotates by [angleDegrees] with a marker and ticks. */
+@Composable
+fun RotaryKnob(angleDegrees: Float, accent: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val radius = size.minDimension / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+        drawCircle(Color(0xFF1A1A26), radius = radius, center = center)
+        drawCircle(Color(0xFF2A2A3A), radius = radius * 0.82f, center = center)
+        drawCircle(
+            accent.copy(alpha = 0.45f),
+            radius = radius * 0.82f,
+            center = center,
+            style = Stroke(width = 1.5f)
+        )
+        for (i in 0 until 12) {
+            val angle = Math.toRadians((i * 30).toDouble())
+            drawLine(
+                Color(0xFF3A3A4C),
+                Offset(
+                    center.x + (cos(angle) * radius * 0.9f).toFloat(),
+                    center.y + (sin(angle) * radius * 0.9f).toFloat()
+                ),
+                Offset(
+                    center.x + (cos(angle) * radius * 0.99f).toFloat(),
+                    center.y + (sin(angle) * radius * 0.99f).toFloat()
+                ),
+                strokeWidth = 1.5f
+            )
+        }
+        val marker = Math.toRadians((angleDegrees - 90f).toDouble())
+        val markerRadius = radius * 0.64f
+        val mx = center.x + (cos(marker) * markerRadius).toFloat()
+        val my = center.y + (sin(marker) * markerRadius).toFloat()
+        drawLine(accent, center, Offset(mx, my), strokeWidth = 3f, cap = StrokeCap.Round)
+        drawCircle(accent, radius = radius * 0.1f, center = Offset(mx, my))
+    }
+}
+
 @Composable
 fun <T> Dropdown(
     placeholder: String,
