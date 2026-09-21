@@ -852,7 +852,12 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
         accent = accent,
         onDismiss = { state.activeKnob = null }
     ) {
-        Text("$value", color = PrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "${(value * 100f / 127f).roundToInt()}%",
+            color = PrimaryText,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(Modifier.height(8.dp))
         Slider(
             value = value.toFloat(),
