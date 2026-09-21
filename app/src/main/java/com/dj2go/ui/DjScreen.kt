@@ -290,8 +290,8 @@ private fun TransportRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActio
             Modifier.weight(1f).fillMaxHeight()
         )
         Spacer(Modifier.width(5.dp))
-        TransportButton(
-            if (ui.playing) "PAUSE" else "PLAY", ui.playing, accent,
+        PlayPauseButton(
+            ui.playing, accent,
             { actions.onTransport(deck, ControlId.PLAY) },
             Modifier.weight(1f).fillMaxHeight()
         )

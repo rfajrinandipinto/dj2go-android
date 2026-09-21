@@ -8,6 +8,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -25,6 +26,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -434,6 +436,48 @@ fun TransportButton(
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+@Composable
+fun PlayPauseButton(
+    playing: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (playing) accent else Color(0xFF23232F))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.size(16.dp)) {
+            val color = if (playing) Color.Black else Color(0xFFD0D0E0)
+            if (playing) {
+                val barWidth = size.width * 0.28f
+                val gap = size.width * 0.18f
+                drawRect(
+                    color = color,
+                    topLeft = Offset(size.width / 2f - gap / 2f - barWidth, 0f),
+                    size = Size(barWidth, size.height)
+                )
+                drawRect(
+                    color = color,
+                    topLeft = Offset(size.width / 2f + gap / 2f, 0f),
+                    size = Size(barWidth, size.height)
+                )
+            } else {
+                val path = Path().apply {
+                    moveTo(size.width * 0.22f, 0f)
+                    lineTo(size.width, size.height / 2f)
+                    lineTo(size.width * 0.22f, size.height)
+                    close()
+                }
+                drawPath(path, color)
+            }
+        }
     }
 }
 
