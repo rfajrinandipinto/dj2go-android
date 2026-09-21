@@ -23,11 +23,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -613,16 +614,17 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
 @Composable
 private fun SettingsDialog(state: DjState, actions: DjActions) {
     val s = state.settings
-    AlertDialog(
-        onDismissRequest = { state.showSettings = false },
-        title = { Text("Settings", color = Color(s.deckAColor), fontWeight = FontWeight.Bold) },
-        text = {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 430.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+    DjDialog(
+        title = "Settings",
+        accent = Color(0xFFB0B0C8),
+        onDismiss = { state.showSettings = false }
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 430.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
                 SectionLabel("WAVEFORM")
                 OptionRow("Zoom", listOf(4f, 6f, 8f, 12f), s.secondsVisible, { "${it.toInt()}s" }) {
                     actions.onSettingsChange(s.copy(secondsVisible = it))
@@ -669,12 +671,8 @@ private fun SettingsDialog(state: DjState, actions: DjActions) {
                 ColorRow("Deck 2", s.deckBColor) {
                     actions.onSettingsChange(s.copy(deckBColor = it))
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { state.showSettings = false }) { Text("Done") }
         }
-    )
+    }
 }
 
 @Composable
@@ -765,50 +763,37 @@ private fun knobValue(state: DjState, knob: KnobId): Int = when (knob) {
 private fun KnobDialog(state: DjState, actions: DjActions) {
     val knob = state.activeKnob ?: return
     val value = knobValue(state, knob)
-    AlertDialog(
-        onDismissRequest = { state.activeKnob = null },
-        title = { Text(knob.label, color = DeckAAccent, fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                Text(
-                    "$value",
-                    color = PrimaryText,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(8.dp))
-                Slider(
-                    value = value.toFloat(),
-                    onValueChange = {
-                        actions.onKnobChange(knob, it.roundToInt().coerceIn(0, 127))
-                    },
-                    valueRange = 0f..127f
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedButton(
-                        onClick = { actions.onKnobChange(knob, (value - 10).coerceIn(0, 127)) },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("-10") }
-                    OutlinedButton(
-                        onClick = { actions.onKnobChange(knob, (value - 1).coerceIn(0, 127)) },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("-1") }
-                    OutlinedButton(
-                        onClick = { actions.onKnobChange(knob, (value + 1).coerceIn(0, 127)) },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("+1") }
-                    OutlinedButton(
-                        onClick = { actions.onKnobChange(knob, (value + 10).coerceIn(0, 127)) },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("+10") }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { state.activeKnob = null }) { Text("Done") }
+    val accent = when (knob) {
+        KnobId.GAIN_A -> Color(state.settings.deckAColor)
+        KnobId.GAIN_B -> Color(state.settings.deckBColor)
+        KnobId.MASTER -> Color(state.settings.deckAColor)
+        KnobId.CUE_MIX -> Color(0xFFB0B0C8)
+    }
+    DjDialog(
+        title = knob.label,
+        accent = accent,
+        onDismiss = { state.activeKnob = null }
+    ) {
+        Text("$value", color = PrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { actions.onKnobChange(knob, it.roundToInt().coerceIn(0, 127)) },
+            valueRange = 0f..127f,
+            colors = SliderDefaults.colors(
+                thumbColor = accent,
+                activeTrackColor = accent,
+                inactiveTrackColor = Color(0xFF2A2A3A)
+            )
+        )
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            DialogButton("-10", { actions.onKnobChange(knob, (value - 10).coerceIn(0, 127)) }, Modifier.weight(1f))
+            DialogButton("-1", { actions.onKnobChange(knob, (value - 1).coerceIn(0, 127)) }, Modifier.weight(1f))
+            DialogButton("+1", { actions.onKnobChange(knob, (value + 1).coerceIn(0, 127)) }, Modifier.weight(1f))
+            DialogButton("+10", { actions.onKnobChange(knob, (value + 10).coerceIn(0, 127)) }, Modifier.weight(1f))
         }
-    )
+    }
 }
 
 @Composable
@@ -842,49 +827,54 @@ private fun LogOverlay(state: DjState) {
 
 @Composable
 private fun UpdateDialog(state: DjState, actions: DjActions) {
-    AlertDialog(
-        onDismissRequest = { state.showUpdateDialog = false },
-        title = { Text("App updates") },
-        text = {
-            Column {
-                Text("Manifest URL (version.json)", fontSize = 11.sp, color = MutedText)
-                OutlinedTextField(
-                    value = state.updateUrl,
-                    onValueChange = actions.onUpdateUrlChange,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = state.updateStatus.ifEmpty { "Not checked yet." },
-                    fontSize = 11.sp,
-                    color = PrimaryText
-                )
-                state.updateInfo?.let { info ->
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "Available: v${info.versionName} (${info.versionCode})",
-                        fontSize = 12.sp,
-                        color = DeckAAccent,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (info.notes.isNotEmpty()) {
-                        Text(info.notes, fontSize = 11.sp, color = MutedText)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = actions.onCheckUpdate) { Text("Check") }
-        },
-        dismissButton = {
-            Row {
-                TextButton(
-                    onClick = actions.onInstallUpdate,
-                    enabled = state.updateInfo != null
-                ) { Text("Install") }
-                TextButton(onClick = { state.showUpdateDialog = false }) { Text("Close") }
+    val accent = Color(0xFFB0B0C8)
+    DjDialog(
+        title = "App updates",
+        accent = accent,
+        onDismiss = { state.showUpdateDialog = false },
+        confirmLabel = null,
+        extraActions = {
+            TextButton(onClick = actions.onCheckUpdate) { Text("Check", color = accent) }
+            TextButton(
+                onClick = actions.onInstallUpdate,
+                enabled = state.updateInfo != null
+            ) { Text("Install", color = if (state.updateInfo != null) accent else MutedText) }
+            TextButton(onClick = { state.showUpdateDialog = false }) {
+                Text("Close", color = MutedText)
             }
         }
-    )
+    ) {
+        Text("Manifest URL (update.json)", fontSize = 11.sp, color = MutedText)
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = state.updateUrl,
+            onValueChange = actions.onUpdateUrlChange,
+            singleLine = true,
+            textStyle = TextStyle(color = PrimaryText, fontSize = 12.sp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accent,
+                unfocusedBorderColor = Color(0xFF3A3A4C),
+                cursorColor = accent
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = state.updateStatus.ifEmpty { "Not checked yet." },
+            fontSize = 11.sp,
+            color = PrimaryText
+        )
+        state.updateInfo?.let { info ->
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Available: v${info.versionName} (${info.versionCode})",
+                fontSize = 12.sp,
+                color = accent,
+                fontWeight = FontWeight.Bold
+            )
+            if (info.notes.isNotEmpty()) {
+                Text(info.notes, fontSize = 11.sp, color = MutedText)
+            }
+        }
+    }
 }

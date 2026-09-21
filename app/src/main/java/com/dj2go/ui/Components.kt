@@ -3,11 +3,21 @@ package com.dj2go.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.dj2go.audio.BeatGrid
 import com.dj2go.audio.WaveformData
 import kotlin.math.cos
@@ -710,6 +721,65 @@ fun SamplerPad(
                 maxLines = 1
             )
         }
+    }
+}
+
+/** Dialog styled to match the app's dark panels, tinted with an accent colour. */
+@Composable
+fun DjDialog(
+    title: String,
+    accent: Color,
+    onDismiss: () -> Unit,
+    confirmLabel: String? = "Done",
+    onConfirm: (() -> Unit)? = null,
+    extraActions: @Composable RowScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFF0D0D16))
+                .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                .padding(16.dp)
+        ) {
+            Text(title, color = accent, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Spacer(Modifier.height(12.dp))
+            content()
+            Spacer(Modifier.height(14.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                extraActions()
+                if (confirmLabel != null) {
+                    TextButton(onClick = { onConfirm?.invoke() ?: onDismiss() }) {
+                        Text(confirmLabel, color = accent, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Flat button matching the transport buttons, for use inside dialogs. */
+@Composable
+fun DialogButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFF23232F))
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color(0xFFD0D0E0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
