@@ -117,6 +117,8 @@ class DjState {
     var libraryScanning by mutableStateOf(false)
     var showLibrary by mutableStateOf(false)
     var browseAngle by mutableStateOf(0f)
+    var libraryQuery by mutableStateOf("")
+    var librarySortDesc by mutableStateOf(false)
 
     var showUpdateDialog by mutableStateOf(false)
     var updateUrl by mutableStateOf("")

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -111,7 +112,7 @@ fun DjScreen(state: DjState, actions: DjActions) {
                 MixerPanel(state, actions, Modifier.width(210.dp).fillMaxHeight())
                 DeckPanel(Deck.B, state.deckB, state, actions, Modifier.weight(1f))
             }
-            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(40.dp))
+            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(76.dp))
         }
         if (state.showLibrary) {
             LibraryOverlay(
@@ -119,9 +120,9 @@ fun DjScreen(state: DjState, actions: DjActions) {
                 actions,
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 40.dp)
+                    .padding(bottom = 76.dp)
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(320.dp)
             )
         }
         if (state.showLog) LogOverlay(state)
@@ -611,38 +612,64 @@ private fun SmallEqKnob(
 
 @Composable
 private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier) {
-    Row(
-        modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Text("LIBRARY", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = if (state.library.isEmpty()) {
-                state.libraryFolderLabel
-            } else {
-                "${state.libraryFolderLabel}  •  ${state.library.size} tracks"
-            },
-            color = if (state.library.isEmpty()) MutedText else Color(0xFFB0B0C8),
-            fontSize = 10.sp,
-            maxLines = 1
-        )
-        if (state.libraryScanning) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("LIBRARY", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
-            Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
+            Text(
+                text = if (state.library.isEmpty()) {
+                    state.libraryFolderLabel
+                } else {
+                    "${state.libraryFolderLabel}  •  ${state.library.size} tracks"
+                },
+                color = if (state.library.isEmpty()) MutedText else Color(0xFFB0B0C8),
+                fontSize = 10.sp,
+                maxLines = 1
+            )
+            if (state.libraryScanning) {
+                Spacer(Modifier.width(8.dp))
+                Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
+            }
+            Spacer(Modifier.weight(1f))
+            Text(state.lastEvent, color = MutedText, fontSize = 9.sp, maxLines = 1)
         }
-        Spacer(Modifier.weight(1f))
-        Text(state.lastEvent, color = MutedText, fontSize = 9.sp, maxLines = 1)
+        Spacer(Modifier.height(4.dp))
+        Row(Modifier.fillMaxWidth().height(28.dp)) {
+            for (index in 0 until 8) {
+                val name = state.samplerNames.getOrNull(index).orEmpty()
+                SamplerPad(
+                    label = if (name.isNotEmpty()) name.take(9) else "S${index + 1}",
+                    active = index in state.samplerPlaying,
+                    loaded = name.isNotEmpty(),
+                    loading = index in state.loadingSampler,
+                    accent = if (index < 4) DeckAAccent else DeckBAccent,
+                    onTrigger = { actions.onSamplerTrigger(index) },
+                    onAssign = { actions.onSamplerAssign(index) },
+                    modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 2.dp)
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifier) {
     val listState = rememberLazyListState()
-    LaunchedEffect(state.libraryIndex) {
-        if (state.library.isNotEmpty()) {
-            listState.scrollToItem(state.libraryIndex.coerceIn(0, state.library.size - 1))
+    val shown = remember(state.library, state.libraryQuery, state.librarySortDesc) {
+        val base = if (state.libraryQuery.isBlank()) {
+            state.library
+        } else {
+            state.library.filter { it.name.contains(state.libraryQuery, ignoreCase = true) }
         }
+        if (state.librarySortDesc) base.sortedByDescending { it.name.lowercase() }
+        else base.sortedBy { it.name.lowercase() }
+    }
+    val selectedUri = state.library.getOrNull(state.libraryIndex)?.uri
+    LaunchedEffect(state.libraryIndex, shown) {
+        val position = shown.indexOfFirst { it.uri == selectedUri }
+        if (position >= 0) listState.scrollToItem(position)
     }
     Column(
         modifier
@@ -664,20 +691,43 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
             TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(70.dp).height(26.dp))
         }
         Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = state.libraryQuery,
+                onValueChange = { state.libraryQuery = it },
+                singleLine = true,
+                placeholder = { Text("Search", fontSize = 11.sp, color = MutedText) },
+                textStyle = TextStyle(color = PrimaryText, fontSize = 12.sp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = DeckAAccent,
+                    unfocusedBorderColor = Color(0xFF3A3A4C),
+                    cursorColor = DeckAAccent
+                ),
+                modifier = Modifier.weight(1f).height(52.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            DialogButton(
+                if (state.librarySortDesc) "Z-A" else "A-Z",
+                { state.librarySortDesc = !state.librarySortDesc },
+                Modifier.width(54.dp)
+            )
+        }
+        Spacer(Modifier.height(6.dp))
         LazyColumn(Modifier.fillMaxWidth().weight(1f), state = listState) {
-            itemsIndexed(state.library) { index, track ->
-                val selected = index == state.libraryIndex
+            items(shown) { track ->
+                val originalIndex = state.library.indexOf(track)
+                val selected = originalIndex == state.libraryIndex
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .height(24.dp)
                         .background(if (selected) DeckAAccent.copy(alpha = 0.25f) else Color.Transparent)
-                        .clickable { actions.onLibrarySelect(index) }
+                        .clickable { actions.onLibrarySelect(originalIndex) }
                         .padding(horizontal = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${index + 1}",
+                        text = "${originalIndex + 1}",
                         color = MutedText,
                         fontSize = 10.sp,
                         modifier = Modifier.width(34.dp)
@@ -691,7 +741,7 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
                     )
                 }
             }
-            if (state.library.isEmpty()) {
+            if (shown.isEmpty()) {
                 item {
                     Text(
                         text = "No tracks. Tap FOLDER to choose your music folder.",
