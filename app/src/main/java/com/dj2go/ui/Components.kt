@@ -30,8 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,8 +61,17 @@ fun MainWaveform(
     amplitudeScale: Float,
     showBeatGrid: Boolean,
     showCueMarkers: Boolean,
+    showBarBeat: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
+    val barPaint = remember {
+        android.graphics.Paint().apply {
+            isAntiAlias = true
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+    }
+    val barTextSize = with(density) { 10.sp.toPx() }
     Canvas(modifier) {
         drawRect(color = WaveBackground)
         val width = size.width
@@ -114,6 +125,31 @@ fun MainWaveform(
                 )
                 beatIndex += 1.0
                 beatFrame += period
+            }
+        }
+
+        if (showBarBeat && beatGrid != null && beatGrid.valid) {
+            val period = beatGrid.periodFrames
+            val first = beatGrid.firstBeatFrames.toDouble()
+            val startFrame = positionFrames - (width / 2f) * framesPerPixel
+            val endFrame = positionFrames + (width / 2f) * framesPerPixel
+            barPaint.textSize = barTextSize
+            barPaint.color = android.graphics.Color.argb(230, 235, 235, 245)
+            var barIndex = Math.ceil(Math.ceil((startFrame - first) / period) / 4.0) * 4.0
+            var barFrame = first + barIndex * period
+            while (barFrame <= endFrame) {
+                val barX = ((barFrame - positionFrames) / framesPerPixel + width / 2f).toFloat()
+                val barNumber = (barIndex / 4.0).toLong() + 1
+                if (barNumber >= 1L && barX >= -20f && barX <= width + 20f) {
+                    drawContext.canvas.nativeCanvas.drawText(
+                        barNumber.toString(),
+                        barX + 3f,
+                        barTextSize + 2f,
+                        barPaint
+                    )
+                }
+                barIndex += 4.0
+                barFrame += 4.0 * period
             }
         }
 

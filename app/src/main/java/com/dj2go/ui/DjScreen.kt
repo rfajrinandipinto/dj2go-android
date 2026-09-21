@@ -247,17 +247,9 @@ private fun DeckPanel(
                 settings.amplitudeScale,
                 settings.showBeatGrid,
                 settings.showCueMarkers,
+                settings.showBarBeat,
                 Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp))
             )
-            if (settings.showBarBeat) {
-                Text(
-                    text = ui.barBeat,
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
-                )
-            }
             if (ui.beatsToCue >= 0) {
                 Text(
                     text = "→ ${ui.beatsToCue}",
