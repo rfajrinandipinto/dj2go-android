@@ -1,6 +1,11 @@
 package com.dj2go.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -491,6 +497,17 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         animationSpec = tween(durationMillis = 140),
         label = "browseAngle"
     )
+    val infinite = rememberInfiniteTransition(label = "cratePulse")
+    val pulse by infinite.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+    val scale = if (state.showLibrary) pulse else 1f
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
@@ -499,13 +516,14 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         OutlineButton(
             "1", accentA,
             { actions.onLoad(Deck.A) },
-            Modifier.weight(1f).height(42.dp)
+            Modifier.weight(1f).height(42.dp).graphicsLayer { scaleX = scale; scaleY = scale }
         )
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 Modifier
                     .size(42.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -540,7 +558,7 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
         OutlineButton(
             "2", accentB,
             { actions.onLoad(Deck.B) },
-            Modifier.weight(1f).height(42.dp)
+            Modifier.weight(1f).height(42.dp).graphicsLayer { scaleX = scale; scaleY = scale }
         )
     }
 }
