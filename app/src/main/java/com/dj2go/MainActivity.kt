@@ -163,6 +163,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         onPickFolder = { pickFolder.launch(null) },
         onRescan = { rescanLibrary() },
         onLibrarySelect = { index -> state.libraryIndex = index },
+        onToggleLibrary = { state.showLibrary = !state.showLibrary },
         onTestTone = { audio.playTestTone() },
         onOpenUpdate = { state.showUpdateDialog = true },
         onUpdateUrlChange = { url ->
@@ -239,7 +240,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         when (event.control) {
             ControlId.LOAD -> if (event.pressed) event.deck?.let { loadForDeck(it) }
             ControlId.BROWSE -> if (event.delta != 0) moveSelection(event.delta)
-            ControlId.BROWSE_PRESS -> if (event.pressed) loadForDeck(Deck.A)
+            ControlId.BROWSE_PRESS -> if (event.pressed) state.showLibrary = !state.showLibrary
             else -> Unit
         }
     }
@@ -281,6 +282,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
     }
 
     private fun loadForDeck(deck: Deck) {
+        state.showLibrary = false
         val track = state.library.getOrNull(state.libraryIndex)
         if (track != null) {
             appendLog("-- decoding '${track.name}' for Deck $deck... --")

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <string name="app_name">DJ2GO</string>
+    <string name="btn_clear">Clear log</string>
+    <string name="btn_load_a">Load Deck A</string>
+    <string name="btn_load_b">Load Deck B</string>
+    <string name="btn_refresh">Refresh devices</string>
+    <string name="label_cue_output">Cue / headphone output</string>
+    <string name="label_log">MIDI monitor</string>
+    <string name="label_output">Master output</string>
+    <string name="label_state">Live controls</string>
+    <string name="status_idle">Looking for a USB MIDI controller...</string>
+    <style name="Theme.DJ2GO" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor" ns1:targetApi="l">@android:color/black</item>
+        <item name="android:navigationBarColor" ns1:targetApi="l">@android:color/black</item>
+    </style>
+</resources>

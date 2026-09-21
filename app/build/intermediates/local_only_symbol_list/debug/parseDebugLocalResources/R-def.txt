@@ -1,0 +1,25 @@
+R_DEF: Internal format may change without notice
+local
+id btnClear
+id btnLoadA
+id btnLoadB
+id btnRefresh
+id cueSpinner
+id outputSpinner
+id scrollLog
+id tvLog
+id tvState
+id tvStatus
+layout activity_main
+string app_name
+string btn_clear
+string btn_load_a
+string btn_load_b
+string btn_refresh
+string label_cue_output
+string label_log
+string label_output
+string label_state
+string status_idle
+style Theme.DJ2GO
+xml file_paths

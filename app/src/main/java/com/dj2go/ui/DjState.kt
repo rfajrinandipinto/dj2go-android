@@ -85,6 +85,7 @@ class DjState {
     var libraryIndex by mutableStateOf(0)
     var libraryFolderLabel by mutableStateOf("No folder selected")
     var libraryScanning by mutableStateOf(false)
+    var showLibrary by mutableStateOf(false)
 
     var showUpdateDialog by mutableStateOf(false)
     var updateUrl by mutableStateOf("")

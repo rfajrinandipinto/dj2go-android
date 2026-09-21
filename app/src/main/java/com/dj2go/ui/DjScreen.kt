@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +54,7 @@ class DjActions(
     val onPickFolder: () -> Unit,
     val onRescan: () -> Unit,
     val onLibrarySelect: (Int) -> Unit,
+    val onToggleLibrary: () -> Unit,
     val onTestTone: () -> Unit,
     val onOpenUpdate: () -> Unit,
     val onUpdateUrlChange: (String) -> Unit,
@@ -72,7 +75,18 @@ fun DjScreen(state: DjState, actions: DjActions) {
                 MixerPanel(state, actions, Modifier.width(210.dp).fillMaxHeight())
                 DeckPanel(Deck.B, state.deckB, state, actions, Modifier.weight(1f))
             }
-            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(190.dp))
+            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(92.dp))
+        }
+        if (state.showLibrary) {
+            LibraryOverlay(
+                state,
+                actions,
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 92.dp)
+                    .fillMaxWidth()
+                    .height(260.dp)
+            )
         }
         if (state.showLog) LogOverlay(state)
         if (state.showUpdateDialog) UpdateDialog(state, actions)
@@ -411,12 +425,16 @@ private fun ChannelStrip(label: String, accent: Color, deck: DeckUi) {
 
 @Composable
 private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier) {
-    Column(modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp, vertical = 8.dp)) {
+    Column(modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp, vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("LIBRARY", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
             Text(
-                text = state.libraryFolderLabel,
+                text = if (state.library.isEmpty()) {
+                    state.libraryFolderLabel
+                } else {
+                    "${state.libraryFolderLabel}  •  ${state.library.size} tracks"
+                },
                 color = if (state.library.isEmpty()) MutedText else Color(0xFFB0B0C8),
                 fontSize = 10.sp,
                 maxLines = 1,
@@ -426,54 +444,25 @@ private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier)
                 Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
                 Spacer(Modifier.width(8.dp))
             }
-            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(72.dp).height(26.dp))
-            Spacer(Modifier.width(6.dp))
-            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(72.dp).height(26.dp))
-            Spacer(Modifier.width(6.dp))
-            TransportButton("LOAD 1", false, DeckAAccent, { actions.onLoad(Deck.A) }, Modifier.width(72.dp).height(26.dp))
-            Spacer(Modifier.width(6.dp))
-            TransportButton("LOAD 2", false, DeckBAccent, { actions.onLoad(Deck.B) }, Modifier.width(72.dp).height(26.dp))
+            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(66.dp).height(26.dp))
+            Spacer(Modifier.width(5.dp))
+            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(66.dp).height(26.dp))
+            Spacer(Modifier.width(10.dp))
+            // Mirrors the hardware: LOAD 1 | BROWSE | LOAD 2
+            TransportButton("LOAD 1", false, DeckAAccent, { actions.onLoad(Deck.A) }, Modifier.width(72.dp).height(30.dp))
+            Spacer(Modifier.width(5.dp))
+            TransportButton(
+                "BROWSE",
+                state.showLibrary,
+                Color(0xFFB0B0C8),
+                actions.onToggleLibrary,
+                Modifier.width(84.dp).height(30.dp)
+            )
+            Spacer(Modifier.width(5.dp))
+            TransportButton("LOAD 2", false, DeckBAccent, { actions.onLoad(Deck.B) }, Modifier.width(72.dp).height(30.dp))
         }
         Spacer(Modifier.height(4.dp))
-        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
-            itemsIndexed(state.library) { index, track ->
-                val selected = index == state.libraryIndex
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                        .background(if (selected) DeckAAccent.copy(alpha = 0.22f) else Color.Transparent)
-                        .clickable { actions.onLibrarySelect(index) }
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${index + 1}",
-                        color = MutedText,
-                        fontSize = 9.sp,
-                        modifier = Modifier.width(30.dp)
-                    )
-                    Text(
-                        text = track.name,
-                        color = if (selected) PrimaryText else Color(0xFFB0B0C8),
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            if (state.library.isEmpty()) {
-                item {
-                    Text(
-                        text = "No tracks. Tap FOLDER to choose your music folder.",
-                        color = MutedText,
-                        fontSize = 10.sp
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth().height(34.dp)) {
+        Row(Modifier.fillMaxWidth().height(30.dp)) {
             for (index in 0 until 8) {
                 val name = state.samplerNames.getOrNull(index).orEmpty()
                 SamplerPad(
@@ -487,8 +476,74 @@ private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier)
                 )
             }
         }
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(2.dp))
         Text(state.lastEvent, color = MutedText, fontSize = 9.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifier) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.libraryIndex) {
+        if (state.library.isNotEmpty()) {
+            listState.scrollToItem(state.libraryIndex.coerceIn(0, state.library.size - 1))
+        }
+    }
+    Column(
+        modifier
+            .background(Color(0xF00E0E16))
+            .padding(10.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("BROWSE", color = DeckAAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = state.library.getOrNull(state.libraryIndex)?.name ?: "No track selected",
+                color = PrimaryText,
+                fontSize = 11.sp,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
+            Text("BROWSE to close  •  LOAD to load", color = MutedText, fontSize = 9.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+        LazyColumn(Modifier.fillMaxWidth().weight(1f), state = listState) {
+            itemsIndexed(state.library) { index, track ->
+                val selected = index == state.libraryIndex
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(24.dp)
+                        .background(if (selected) DeckAAccent.copy(alpha = 0.25f) else Color.Transparent)
+                        .clickable { actions.onLibrarySelect(index) }
+                        .padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${index + 1}",
+                        color = MutedText,
+                        fontSize = 10.sp,
+                        modifier = Modifier.width(34.dp)
+                    )
+                    Text(
+                        text = track.name,
+                        color = if (selected) PrimaryText else Color(0xFFB0B0C8),
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            if (state.library.isEmpty()) {
+                item {
+                    Text(
+                        text = "No tracks. Tap FOLDER to choose your music folder.",
+                        color = MutedText,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
     }
 }
 

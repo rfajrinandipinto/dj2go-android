@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.dj2go.app-debug-56:/layout_activity_main.xml.flat",
+        "source": "com.dj2go.app-main-58:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.dj2go.app-debug-56:/xml_file_paths.xml.flat",
+        "source": "com.dj2go.app-main-58:/xml/file_paths.xml"
+    }
+]
