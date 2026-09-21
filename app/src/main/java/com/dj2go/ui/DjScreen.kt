@@ -200,6 +200,14 @@ private fun DeckPanel(
             )
             Text(" BPM", color = MutedText, fontSize = 9.sp)
             Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (ui.key.isNotEmpty()) ui.key else "--",
+                color = accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(" KEY", color = MutedText, fontSize = 9.sp)
+            Spacer(Modifier.width(8.dp))
             Text(ui.barBeat, color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
             Text(

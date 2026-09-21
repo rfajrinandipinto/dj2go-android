@@ -47,8 +47,18 @@ object PcmDecoder {
         val mapped = source.channel.map(FileChannel.MapMode.READ_ONLY, 0, source.length())
         mapped.order(ByteOrder.LITTLE_ENDIAN)
         val beatGrid = BeatDetector.detect(mapped, result.frames, result.sampleRate)
+        val key = KeyDetector.detect(mapped, result.frames, result.sampleRate)
         val waveform = result.waveform ?: WaveformBuilder(result.sampleRate).finish()
-        return PcmTrack(source, mapped, result.frames, result.sampleRate, waveform, beatGrid)
+        return PcmTrack(
+            source,
+            mapped,
+            result.frames,
+            result.sampleRate,
+            waveform,
+            beatGrid,
+            key?.name ?: "",
+            key?.camelot ?: ""
+        )
     }
 
     fun decodeToMemory(context: Context, uri: Uri): PcmData {

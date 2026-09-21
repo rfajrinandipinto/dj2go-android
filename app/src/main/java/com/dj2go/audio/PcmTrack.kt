@@ -16,7 +16,9 @@ class PcmTrack(
     val frameCount: Int,
     val sampleRate: Int,
     val waveform: WaveformData,
-    val beatGrid: BeatGrid
+    val beatGrid: BeatGrid,
+    val key: String,
+    val camelot: String
 ) {
     init {
         buffer.order(ByteOrder.LITTLE_ENDIAN)
