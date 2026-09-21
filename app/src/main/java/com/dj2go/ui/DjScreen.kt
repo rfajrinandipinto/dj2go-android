@@ -38,12 +38,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +58,7 @@ import com.dj2go.audio.OutputDevices
 import com.dj2go.midi.ControlId
 import com.dj2go.midi.Deck
 import com.dj2go.midi.Mixer
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Callbacks from the on-screen UI back into the mixer. */
@@ -321,6 +326,11 @@ private fun DeckPanel(
                     ui.gain, accent, true, Modifier.size(34.dp),
                     onClick = {
                         actions.onKnobTap(if (deck == Deck.A) KnobId.GAIN_A else KnobId.GAIN_B)
+                    },
+                    onChange = {
+                        actions.onKnobChange(
+                            if (deck == Deck.A) KnobId.GAIN_A else KnobId.GAIN_B, it
+                        )
                     }
                 )
                 Text("GAIN", color = MutedText, fontSize = 8.sp)
@@ -445,14 +455,16 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Knob(
                     state.cueMix, Color(0xFFB0B0C8), true, Modifier.size(32.dp),
-                    onClick = { actions.onKnobTap(KnobId.CUE_MIX) }
+                    onClick = { actions.onKnobTap(KnobId.CUE_MIX) },
+                    onChange = { actions.onKnobChange(KnobId.CUE_MIX, it) }
                 )
                 Text("CUE MIX", color = MutedText, fontSize = 8.sp)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Knob(
                     state.masterGain, Color(state.settings.deckAColor), true, Modifier.size(32.dp),
-                    onClick = { actions.onKnobTap(KnobId.MASTER) }
+                    onClick = { actions.onKnobTap(KnobId.MASTER) },
+                    onChange = { actions.onKnobChange(KnobId.MASTER, it) }
                 )
                 Text("MASTER", color = MutedText, fontSize = 8.sp)
             }
@@ -544,7 +556,11 @@ private fun ChannelStrip(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Knob(deck.gain, accent, true, Modifier.size(34.dp), onClick = { actions.onKnobTap(knobId) })
+        Knob(
+            deck.gain, accent, true, Modifier.size(34.dp),
+            onClick = { actions.onKnobTap(knobId) },
+            onChange = { actions.onKnobChange(knobId, it) }
+        )
         Spacer(Modifier.height(3.dp))
         Text("TRIM", color = MutedText, fontSize = 8.sp)
         Spacer(Modifier.height(10.dp))
@@ -829,6 +845,8 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
         KnobId.MASTER -> Color(state.settings.deckAColor)
         KnobId.CUE_MIX -> Color(0xFFB0B0C8)
     }
+    val haptics = LocalHapticFeedback.current
+    var sliderSnapped by remember { mutableStateOf(false) }
     DjDialog(
         title = knob.label,
         accent = accent,
@@ -838,7 +856,19 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
         Spacer(Modifier.height(8.dp))
         Slider(
             value = value.toFloat(),
-            onValueChange = { actions.onKnobChange(knob, it.roundToInt().coerceIn(0, 127)) },
+            onValueChange = {
+                var next = it.roundToInt().coerceIn(0, 127)
+                if (abs(next - 64) <= 3) {
+                    next = 64
+                    if (!sliderSnapped) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        sliderSnapped = true
+                    }
+                } else {
+                    sliderSnapped = false
+                }
+                actions.onKnobChange(knob, next)
+            },
             valueRange = 0f..127f,
             colors = SliderDefaults.colors(
                 thumbColor = accent,

@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,18 +44,24 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.dj2go.audio.BeatGrid
 import com.dj2go.audio.WaveformData
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+
+private const val DETENT_CENTER = 64
+private const val DETENT_THRESHOLD = 3
 
 // ---------------------------------------------------------------- waveforms
 
@@ -333,10 +341,49 @@ fun Knob(
     accent: Color,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onChange: ((Int) -> Unit)? = null
 ) {
+    val haptics = LocalHapticFeedback.current
+    val latestValue by rememberUpdatedState(value)
+    val latestOnChange by rememberUpdatedState(onChange)
+    var snapped by remember { mutableStateOf(false) }
+
+    val dragModifier = if (onChange != null) {
+        Modifier.pointerInput(Unit) {
+            var base = 0
+            var accumulated = 0f
+            detectVerticalDragGestures(
+                onDragStart = {
+                    base = latestValue
+                    accumulated = 0f
+                    snapped = false
+                },
+                onVerticalDrag = { change, dragAmount ->
+                    change.consume()
+                    accumulated -= dragAmount
+                    var next = (base + accumulated / 3f).roundToInt().coerceIn(0, 127)
+                    if (abs(next - DETENT_CENTER) <= DETENT_THRESHOLD) {
+                        next = DETENT_CENTER
+                        if (!snapped) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            snapped = true
+                        }
+                    } else {
+                        snapped = false
+                    }
+                    latestOnChange?.invoke(next)
+                }
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Canvas(
-        modifier.then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+        modifier
+            .then(dragModifier)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
     ) {
         val radius = size.minDimension / 2f
         val center = Offset(size.width / 2f, size.height / 2f)
@@ -353,6 +400,13 @@ fun Knob(
             topLeft = Offset(center.x - radius * 0.9f, center.y - radius * 0.9f),
             size = Size(radius * 1.8f, radius * 1.8f),
             style = Stroke(width = 3f)
+        )
+        // Centre detent mark at 12 o'clock (value 64).
+        drawLine(
+            Color(0xFFE6E6F0).copy(alpha = 0.75f),
+            Offset(center.x, center.y - radius),
+            Offset(center.x, center.y - radius * 0.72f),
+            strokeWidth = 2f
         )
         val angle = Math.toRadians((135f + 270f * fraction).toDouble())
         val pointerRadius = radius * 0.62f
@@ -390,8 +444,21 @@ fun HorizontalFader(
     modifier: Modifier = Modifier
 ) {
     var width by remember { mutableStateOf(1) }
+    var snapped by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
     fun emit(x: Float) {
-        if (width > 0) onChange(((x / width) * 127f).roundToInt().coerceIn(0, 127))
+        if (width <= 0) return
+        var next = ((x / width) * 127f).roundToInt().coerceIn(0, 127)
+        if (abs(next - DETENT_CENTER) <= DETENT_THRESHOLD) {
+            next = DETENT_CENTER
+            if (!snapped) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                snapped = true
+            }
+        } else {
+            snapped = false
+        }
+        onChange(next)
     }
 
     Canvas(
@@ -407,6 +474,12 @@ fun HorizontalFader(
             Offset(8f, height / 2f),
             Offset(size.width - 8f, height / 2f),
             strokeWidth = 4f
+        )
+        drawLine(
+            Color(0xFFE6E6F0).copy(alpha = 0.55f),
+            Offset(size.width / 2f, 2f),
+            Offset(size.width / 2f, height - 2f),
+            strokeWidth = 2f
         )
         val x = 8f + (size.width - 16f) * (value / 127f)
         drawRoundRect(
@@ -426,8 +499,21 @@ fun VerticalFader(
     modifier: Modifier = Modifier
 ) {
     var height by remember { mutableStateOf(1) }
+    var snapped by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
     fun emit(y: Float) {
-        if (height > 0) onChange(((1f - y / height) * 127f).roundToInt().coerceIn(0, 127))
+        if (height <= 0) return
+        var next = ((1f - y / height) * 127f).roundToInt().coerceIn(0, 127)
+        if (abs(next - DETENT_CENTER) <= DETENT_THRESHOLD) {
+            next = DETENT_CENTER
+            if (!snapped) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                snapped = true
+            }
+        } else {
+            snapped = false
+        }
+        onChange(next)
     }
 
     Canvas(
@@ -443,6 +529,12 @@ fun VerticalFader(
             Offset(width / 2f, 8f),
             Offset(width / 2f, size.height - 8f),
             strokeWidth = 4f
+        )
+        drawLine(
+            Color(0xFFE6E6F0).copy(alpha = 0.55f),
+            Offset(2f, size.height / 2f),
+            Offset(width - 2f, size.height / 2f),
+            strokeWidth = 2f
         )
         val y = 8f + (size.height - 16f) * (1f - value / 127f)
         drawRoundRect(
