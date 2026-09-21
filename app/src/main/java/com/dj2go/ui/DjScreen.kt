@@ -110,7 +110,7 @@ fun DjScreen(state: DjState, actions: DjActions) {
                 MixerPanel(state, actions, Modifier.width(210.dp).fillMaxHeight())
                 DeckPanel(Deck.B, state.deckB, state, actions, Modifier.weight(1f))
             }
-            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(92.dp))
+            LibraryPanel(state, actions, Modifier.fillMaxWidth().height(40.dp))
         }
         if (state.showLibrary) {
             LibraryOverlay(
@@ -118,9 +118,9 @@ fun DjScreen(state: DjState, actions: DjActions) {
                 actions,
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 92.dp)
+                    .padding(bottom = 40.dp)
                     .fillMaxWidth()
-                    .height(260.dp)
+                    .height(300.dp)
             )
         }
         if (state.showLog) LogOverlay(state)
@@ -153,28 +153,8 @@ private fun TopBar(state: DjState, actions: DjActions) {
         Spacer(Modifier.width(6.dp))
         Text("CUE", color = MutedText, fontSize = 9.sp)
         Dropdown("Cue", state.cueOptions, state.selectedCue, { it.label }, actions.onSelectCue)
-        Spacer(Modifier.width(6.dp))
-        TransportButton(
-            "TEST", false, Color(0xFF3A3A4C),
-            actions.onTestTone,
-            Modifier.width(58.dp).height(26.dp)
-        )
-        Spacer(Modifier.width(6.dp))
-        TransportButton(
-            "UPDATE", false, Color(0xFF3A3A4C),
-            actions.onOpenUpdate,
-            Modifier.width(70.dp).height(26.dp)
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = "LOG",
-            color = if (state.showLog) DeckAAccent else MutedText,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .clickable { state.showLog = !state.showLog }
-                .padding(6.dp)
-        )
+        Spacer(Modifier.width(12.dp))
+        SettingsIconButton(onClick = actions.onOpenSettings)
     }
 }
 
@@ -272,10 +252,6 @@ private fun DeckPanel(
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
                 )
             }
-            SettingsIconButton(
-                onClick = actions.onOpenSettings,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp)
-            )
             if (loading) {
                 Box(
                     Modifier.fillMaxSize().background(Color(0xCC07070B)),
@@ -596,46 +572,27 @@ private fun ChannelStrip(
 
 @Composable
 private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier) {
-    Column(modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp, vertical = 6.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("LIBRARY", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    Row(
+        modifier.background(Color(0xFF0C0C14)).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("LIBRARY", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = if (state.library.isEmpty()) {
+                state.libraryFolderLabel
+            } else {
+                "${state.libraryFolderLabel}  •  ${state.library.size} tracks"
+            },
+            color = if (state.library.isEmpty()) MutedText else Color(0xFFB0B0C8),
+            fontSize = 10.sp,
+            maxLines = 1
+        )
+        if (state.libraryScanning) {
             Spacer(Modifier.width(8.dp))
-            Text(
-                text = if (state.library.isEmpty()) {
-                    state.libraryFolderLabel
-                } else {
-                    "${state.libraryFolderLabel}  •  ${state.library.size} tracks"
-                },
-                color = if (state.library.isEmpty()) MutedText else Color(0xFFB0B0C8),
-                fontSize = 10.sp,
-                maxLines = 1,
-                modifier = Modifier.weight(1f)
-            )
-            if (state.libraryScanning) {
-                Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
-                Spacer(Modifier.width(8.dp))
-            }
-            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(72.dp).height(26.dp))
-            Spacer(Modifier.width(6.dp))
-            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(72.dp).height(26.dp))
+            Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
         }
-        Spacer(Modifier.height(4.dp))
-        Row(Modifier.fillMaxWidth().height(30.dp)) {
-            for (index in 0 until 8) {
-                val name = state.samplerNames.getOrNull(index).orEmpty()
-                SamplerPad(
-                    label = if (name.isNotEmpty()) name.take(9) else "S${index + 1}",
-                    active = index in state.samplerPlaying,
-                    loaded = name.isNotEmpty(),
-                    loading = index in state.loadingSampler,
-                    accent = if (index < 4) DeckAAccent else DeckBAccent,
-                    onTrigger = { actions.onSamplerTrigger(index) },
-                    onAssign = { actions.onSamplerAssign(index) },
-                    modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 2.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.weight(1f))
         Text(state.lastEvent, color = MutedText, fontSize = 9.sp, maxLines = 1)
     }
 }
@@ -663,7 +620,9 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
                 maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
-            Text("BROWSE to close  •  LOAD to load", color = MutedText, fontSize = 9.sp)
+            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(70.dp).height(26.dp))
+            Spacer(Modifier.width(6.dp))
+            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(70.dp).height(26.dp))
         }
         Spacer(Modifier.height(6.dp))
         LazyColumn(Modifier.fillMaxWidth().weight(1f), state = listState) {
@@ -765,6 +724,26 @@ private fun SettingsDialog(state: DjState, actions: DjActions) {
                 }
                 ColorRow("Deck 2", s.deckBColor) {
                     actions.onSettingsChange(s.copy(deckBColor = it))
+                }
+                SectionLabel("TOOLS")
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DialogButton("TEST TONE", { actions.onTestTone() }, Modifier.weight(1f))
+                    DialogButton(
+                        "UPDATE",
+                        {
+                            state.showSettings = false
+                            actions.onOpenUpdate()
+                        },
+                        Modifier.weight(1f)
+                    )
+                    DialogButton(
+                        "LOG",
+                        {
+                            state.showSettings = false
+                            state.showLog = true
+                        },
+                        Modifier.weight(1f)
+                    )
                 }
         }
     }
