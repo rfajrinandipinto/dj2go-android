@@ -1,0 +1,6 @@
+{
+  "versionCode": 4,
+  "versionName": "0.4",
+  "apkUrl": "https://github.com/rfajrinandipinto/dj2go-android/releases/download/v0.4/dj2go-v0.4.apk",
+  "notes": "Deck tools: bar/beat counter, cue & loop markers, auto-loop, beat jump, phase meter, cue mix; icon transport row; tap knobs to adjust; browse popup crate."
+}
