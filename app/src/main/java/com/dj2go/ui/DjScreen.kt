@@ -413,7 +413,9 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("MIXER", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
+        LoadBrowseRow(state, actions)
+        Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, KnobId.GAIN_A, actions)
             ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, KnobId.GAIN_B, actions)
@@ -456,6 +458,50 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
             Color(0xFFB0B0C8),
             { actions.onCrossfader(it) },
             Modifier.fillMaxWidth().height(32.dp)
+        )
+    }
+}
+
+@Composable
+private fun LoadBrowseRow(state: DjState, actions: DjActions) {
+    val accentA = Color(state.settings.deckAColor)
+    val accentB = Color(state.settings.deckBColor)
+    val browseValue = if (state.library.isEmpty()) {
+        64
+    } else {
+        (state.libraryIndex * 127 / (state.library.size - 1).coerceAtLeast(1)).coerceIn(0, 127)
+    }
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        TransportButton(
+            "LOAD 1", false, accentA,
+            { actions.onLoad(Deck.A) },
+            Modifier.weight(1f).height(30.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Knob(
+                browseValue,
+                if (state.showLibrary) accentA else Color(0xFFB0B0C8),
+                true,
+                Modifier.size(40.dp),
+                onClick = actions.onToggleLibrary
+            )
+            Text(
+                "BROWSE",
+                color = if (state.showLibrary) accentA else MutedText,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        TransportButton(
+            "LOAD 2", false, accentB,
+            { actions.onLoad(Deck.B) },
+            Modifier.weight(1f).height(30.dp)
         )
     }
 }
@@ -507,22 +553,9 @@ private fun LibraryPanel(state: DjState, actions: DjActions, modifier: Modifier)
                 Text("scanning...", color = DeckAAccent, fontSize = 9.sp)
                 Spacer(Modifier.width(8.dp))
             }
-            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(66.dp).height(26.dp))
-            Spacer(Modifier.width(5.dp))
-            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(66.dp).height(26.dp))
-            Spacer(Modifier.width(10.dp))
-            // Mirrors the hardware: LOAD 1 | BROWSE | LOAD 2
-            TransportButton("LOAD 1", false, DeckAAccent, { actions.onLoad(Deck.A) }, Modifier.width(72.dp).height(30.dp))
-            Spacer(Modifier.width(5.dp))
-            TransportButton(
-                "BROWSE",
-                state.showLibrary,
-                Color(0xFFB0B0C8),
-                actions.onToggleLibrary,
-                Modifier.width(84.dp).height(30.dp)
-            )
-            Spacer(Modifier.width(5.dp))
-            TransportButton("LOAD 2", false, DeckBAccent, { actions.onLoad(Deck.B) }, Modifier.width(72.dp).height(30.dp))
+            TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(72.dp).height(26.dp))
+            Spacer(Modifier.width(6.dp))
+            TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(72.dp).height(26.dp))
         }
         Spacer(Modifier.height(4.dp))
         Row(Modifier.fillMaxWidth().height(30.dp)) {
