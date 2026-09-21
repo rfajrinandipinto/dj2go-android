@@ -145,12 +145,6 @@ private fun TopBar(state: DjState, actions: DjActions) {
             actions.onOpenUpdate,
             Modifier.width(70.dp).height(26.dp)
         )
-        Spacer(Modifier.width(6.dp))
-        TransportButton(
-            "SETTINGS", false, Color(0xFF3A3A4C),
-            actions.onOpenSettings,
-            Modifier.width(78.dp).height(26.dp)
-        )
         Spacer(Modifier.width(10.dp))
         Text(
             text = "LOG",
@@ -258,6 +252,10 @@ private fun DeckPanel(
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
                 )
             }
+            SettingsIconButton(
+                onClick = actions.onOpenSettings,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp)
+            )
             if (loading) {
                 Box(
                     Modifier.fillMaxSize().background(Color(0xCC07070B)),

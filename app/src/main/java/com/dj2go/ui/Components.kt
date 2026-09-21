@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -535,6 +536,43 @@ fun PlayPauseButton(
 }
 
 enum class TransportIcon { CUE, SYNC, HEADPHONE }
+
+/** Small gear button used on the waveform corner to open settings. */
+@Composable
+fun SettingsIconButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(Color(0x99000000))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(Modifier.size(15.dp)) {
+            val color = Color(0xFFD0D0E0)
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * 0.30f
+            val stroke = size.minDimension * 0.12f
+            for (i in 0 until 8) {
+                val angle = i * Math.PI / 4.0
+                drawLine(
+                    color,
+                    Offset(
+                        center.x + (cos(angle) * radius * 1.1).toFloat(),
+                        center.y + (sin(angle) * radius * 1.1).toFloat()
+                    ),
+                    Offset(
+                        center.x + (cos(angle) * radius * 1.6).toFloat(),
+                        center.y + (sin(angle) * radius * 1.6).toFloat()
+                    ),
+                    strokeWidth = stroke,
+                    cap = StrokeCap.Round
+                )
+            }
+            drawCircle(color, radius = radius, center = center, style = Stroke(width = stroke))
+        }
+    }
+}
 
 @Composable
 fun TransportIconButton(
