@@ -76,3 +76,31 @@ jobs:
         with:
           files: dj2go-*.apk
           fail_on_unmatched_files: true
+
+      - name: Update OTA manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' app/build.gradle.kts)
+          VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          cat > /tmp/update.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkUrl": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/dj2go-${TAG}.apk",
+            "notes": "Release ${TAG}"
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -f -B main origin/main
+          cp /tmp/update.json update.json
+          git add update.json
+          if git diff --cached --quiet; then
+            echo "manifest already up to date"
+          else
+            git commit -m "chore: OTA manifest for ${TAG} [skip ci]"
+            git push origin main
+          fi
