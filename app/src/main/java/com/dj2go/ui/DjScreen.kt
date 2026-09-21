@@ -19,7 +19,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ import com.dj2go.audio.OutputDevices
 import com.dj2go.midi.ControlId
 import com.dj2go.midi.Deck
 import com.dj2go.midi.Mixer
+import kotlin.math.roundToInt
 
 /** Callbacks from the on-screen UI back into the mixer. */
 class DjActions(
@@ -62,7 +65,9 @@ class DjActions(
     val onInstallUpdate: () -> Unit,
     val onCycleTime: (Deck) -> Unit,
     val onBeatJump: (Deck, Int) -> Unit,
-    val onCueMix: (Int) -> Unit
+    val onCueMix: (Int) -> Unit,
+    val onKnobTap: (KnobId) -> Unit,
+    val onKnobChange: (KnobId, Int) -> Unit
 )
 
 @Composable
@@ -90,6 +95,7 @@ fun DjScreen(state: DjState, actions: DjActions) {
         }
         if (state.showLog) LogOverlay(state)
         if (state.showUpdateDialog) UpdateDialog(state, actions)
+        state.activeKnob?.let { KnobDialog(state, actions) }
     }
 }
 
@@ -263,7 +269,12 @@ private fun DeckPanel(
                 Modifier.width(44.dp).fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Knob(ui.gain, accent, true, Modifier.size(34.dp))
+                Knob(
+                    ui.gain, accent, true, Modifier.size(34.dp),
+                    onClick = {
+                        actions.onKnobTap(if (deck == Deck.A) KnobId.GAIN_A else KnobId.GAIN_B)
+                    }
+                )
                 Text("GAIN", color = MutedText, fontSize = 8.sp)
             }
         }
@@ -364,8 +375,8 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
         Text("MIXER", color = MutedText, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ChannelStrip("1", DeckAAccent, state.deckA)
-            ChannelStrip("2", DeckBAccent, state.deckB)
+            ChannelStrip("1", DeckAAccent, state.deckA, KnobId.GAIN_A, actions)
+            ChannelStrip("2", DeckBAccent, state.deckB, KnobId.GAIN_B, actions)
         }
         Spacer(Modifier.weight(1f))
         Text("PHASE", color = MutedText, fontSize = 9.sp)
@@ -382,11 +393,17 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Knob(state.cueMix, Color(0xFFB0B0C8), true, Modifier.size(32.dp))
+                Knob(
+                    state.cueMix, Color(0xFFB0B0C8), true, Modifier.size(32.dp),
+                    onClick = { actions.onKnobTap(KnobId.CUE_MIX) }
+                )
                 Text("CUE MIX", color = MutedText, fontSize = 8.sp)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Knob(state.masterGain, DeckAAccent, true, Modifier.size(32.dp))
+                Knob(
+                    state.masterGain, DeckAAccent, true, Modifier.size(32.dp),
+                    onClick = { actions.onKnobTap(KnobId.MASTER) }
+                )
                 Text("MASTER", color = MutedText, fontSize = 8.sp)
             }
             VuMeter(state.masterLevel, Modifier.width(12.dp).height(48.dp))
@@ -404,11 +421,17 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
 }
 
 @Composable
-private fun ChannelStrip(label: String, accent: Color, deck: DeckUi) {
+private fun ChannelStrip(
+    label: String,
+    accent: Color,
+    deck: DeckUi,
+    knobId: KnobId,
+    actions: DjActions
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Knob(deck.gain, accent, true, Modifier.size(34.dp))
+        Knob(deck.gain, accent, true, Modifier.size(34.dp), onClick = { actions.onKnobTap(knobId) })
         Spacer(Modifier.height(3.dp))
         Text("TRIM", color = MutedText, fontSize = 8.sp)
         Spacer(Modifier.height(10.dp))
@@ -545,6 +568,63 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
             }
         }
     }
+}
+
+private fun knobValue(state: DjState, knob: KnobId): Int = when (knob) {
+    KnobId.GAIN_A -> state.deckA.gain
+    KnobId.GAIN_B -> state.deckB.gain
+    KnobId.MASTER -> state.masterGain
+    KnobId.CUE_MIX -> state.cueMix
+}
+
+@Composable
+private fun KnobDialog(state: DjState, actions: DjActions) {
+    val knob = state.activeKnob ?: return
+    val value = knobValue(state, knob)
+    AlertDialog(
+        onDismissRequest = { state.activeKnob = null },
+        title = { Text(knob.label, color = DeckAAccent, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    "$value",
+                    color = PrimaryText,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(8.dp))
+                Slider(
+                    value = value.toFloat(),
+                    onValueChange = {
+                        actions.onKnobChange(knob, it.roundToInt().coerceIn(0, 127))
+                    },
+                    valueRange = 0f..127f
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { actions.onKnobChange(knob, (value - 10).coerceIn(0, 127)) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("-10") }
+                    OutlinedButton(
+                        onClick = { actions.onKnobChange(knob, (value - 1).coerceIn(0, 127)) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("-1") }
+                    OutlinedButton(
+                        onClick = { actions.onKnobChange(knob, (value + 1).coerceIn(0, 127)) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("+1") }
+                    OutlinedButton(
+                        onClick = { actions.onKnobChange(knob, (value + 10).coerceIn(0, 127)) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("+10") }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { state.activeKnob = null }) { Text("Done") }
+        }
+    )
 }
 
 @Composable

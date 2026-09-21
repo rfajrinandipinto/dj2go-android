@@ -16,6 +16,14 @@ import com.dj2go.midi.Mixer
 /** What the big deck clock shows. */
 enum class TimeMode { ELAPSED, REMAINING, BEATS }
 
+/** Touch-adjustable knobs (used when there is no controller). */
+enum class KnobId(val label: String) {
+    GAIN_A("Deck 1 Gain"),
+    GAIN_B("Deck 2 Gain"),
+    MASTER("Master Gain"),
+    CUE_MIX("Cue Mix")
+}
+
 fun TimeMode.next(): TimeMode = when (this) {
     TimeMode.ELAPSED -> TimeMode.REMAINING
     TimeMode.REMAINING -> TimeMode.BEATS
@@ -65,6 +73,7 @@ class DjState {
 
     var timeModeA by mutableStateOf(TimeMode.ELAPSED)
     var timeModeB by mutableStateOf(TimeMode.ELAPSED)
+    var activeKnob by mutableStateOf<KnobId?>(null)
 
     var samplerNames by mutableStateOf<List<String>>(emptyList())
     var samplerPlaying by mutableStateOf<Set<Int>>(emptySet())

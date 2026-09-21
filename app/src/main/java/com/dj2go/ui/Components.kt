@@ -265,9 +265,12 @@ fun Knob(
     value: Int,
     accent: Color,
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
-    Canvas(modifier) {
+    Canvas(
+        modifier.then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+    ) {
         val radius = size.minDimension / 2f
         val center = Offset(size.width / 2f, size.height / 2f)
         val color = if (enabled) accent else Color(0xFF3A3A48)

@@ -27,6 +27,7 @@ import com.dj2go.ui.Dj2GoTheme
 import com.dj2go.ui.DjActions
 import com.dj2go.ui.DjScreen
 import com.dj2go.ui.DjState
+import com.dj2go.ui.KnobId
 import com.dj2go.ui.next
 import com.dj2go.update.UpdateChecker
 import java.io.File
@@ -181,6 +182,20 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         },
         onCueMix = { value ->
             dispatch(ControlEvent(null, ControlId.CUE_MIX, value, 0, false, 0, null))
+        },
+        onKnobTap = { knob -> state.activeKnob = knob },
+        onKnobChange = { knob, value ->
+            val event = when (knob) {
+                KnobId.GAIN_A -> ControlEvent(Deck.A, ControlId.GAIN, value, 0, false, 0, null)
+                KnobId.GAIN_B -> ControlEvent(Deck.B, ControlId.GAIN, value, 0, false, 0, null)
+                KnobId.MASTER ->
+                    ControlEvent(null, ControlId.MASTER_GAIN, value, 0, false, 0, null)
+                KnobId.CUE_MIX ->
+                    ControlEvent(null, ControlId.CUE_MIX, value, 0, false, 0, null)
+            }
+            // Update the mixer + audio without spamming the log while dragging.
+            mixer.apply(event)
+            audio.handle(event, mixer)
         }
     )
 

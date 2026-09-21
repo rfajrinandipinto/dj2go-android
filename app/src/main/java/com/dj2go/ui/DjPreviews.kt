@@ -144,7 +144,9 @@ private fun previewActions(): DjActions = DjActions(
     onInstallUpdate = {},
     onCycleTime = {},
     onBeatJump = { _, _ -> },
-    onCueMix = {}
+    onCueMix = {},
+    onKnobTap = {},
+    onKnobChange = { _, _ -> }
 )
 
 private fun sampleWaveform(): WaveformData {
