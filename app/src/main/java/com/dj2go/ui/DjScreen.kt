@@ -50,7 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -499,31 +499,36 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
     )
     val infinite = rememberInfiniteTransition(label = "cratePulse")
     val pulse by infinite.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 600, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse"
     )
-    val scale = if (state.showLibrary) pulse else 1f
+    val pulseA = if (state.showLibrary) lerp(accentA.copy(alpha = 0.3f), accentA, pulse) else accentA
+    val pulseB = if (state.showLibrary) lerp(accentB.copy(alpha = 0.3f), accentB, pulse) else accentB
+    val browseColor = if (state.showLibrary) {
+        lerp(accentA.copy(alpha = 0.35f), accentA, pulse)
+    } else {
+        Color(0xFFB0B0C8)
+    }
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         OutlineButton(
-            "1", accentA,
+            "1", pulseA,
             { actions.onLoad(Deck.A) },
-            Modifier.weight(1f).height(42.dp).graphicsLayer { scaleX = scale; scaleY = scale }
+            Modifier.weight(1f).height(42.dp)
         )
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 Modifier
                     .size(42.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -541,24 +546,20 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
                         }
                     }
             ) {
-                RotaryKnob(
-                    browseAngle,
-                    if (state.showLibrary) accentA else Color(0xFFB0B0C8),
-                    Modifier.fillMaxSize()
-                )
+                RotaryKnob(browseAngle, browseColor, Modifier.fillMaxSize())
             }
             Text(
                 "BROWSE",
-                color = if (state.showLibrary) accentA else MutedText,
+                color = if (state.showLibrary) pulseA else MutedText,
                 fontSize = 8.sp,
                 fontWeight = FontWeight.Bold
             )
         }
         Spacer(Modifier.width(8.dp))
         OutlineButton(
-            "2", accentB,
+            "2", pulseB,
             { actions.onLoad(Deck.B) },
-            Modifier.weight(1f).height(42.dp).graphicsLayer { scaleX = scale; scaleY = scale }
+            Modifier.weight(1f).height(42.dp)
         )
     }
 }
