@@ -193,6 +193,14 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
             val event = when (knob) {
                 KnobId.GAIN_A -> ControlEvent(Deck.A, ControlId.GAIN, value, 0, false, 0, null)
                 KnobId.GAIN_B -> ControlEvent(Deck.B, ControlId.GAIN, value, 0, false, 0, null)
+                KnobId.EQ_LOW_A -> ControlEvent(Deck.A, ControlId.EQ_LOW, value, 0, false, 0, null)
+                KnobId.EQ_MID_A -> ControlEvent(Deck.A, ControlId.EQ_MID, value, 0, false, 0, null)
+                KnobId.EQ_HIGH_A -> ControlEvent(Deck.A, ControlId.EQ_HIGH, value, 0, false, 0, null)
+                KnobId.FILTER_A -> ControlEvent(Deck.A, ControlId.FILTER, value, 0, false, 0, null)
+                KnobId.EQ_LOW_B -> ControlEvent(Deck.B, ControlId.EQ_LOW, value, 0, false, 0, null)
+                KnobId.EQ_MID_B -> ControlEvent(Deck.B, ControlId.EQ_MID, value, 0, false, 0, null)
+                KnobId.EQ_HIGH_B -> ControlEvent(Deck.B, ControlId.EQ_HIGH, value, 0, false, 0, null)
+                KnobId.FILTER_B -> ControlEvent(Deck.B, ControlId.FILTER, value, 0, false, 0, null)
                 KnobId.MASTER ->
                     ControlEvent(null, ControlId.MASTER_GAIN, value, 0, false, 0, null)
                 KnobId.CUE_MIX ->

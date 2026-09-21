@@ -13,6 +13,10 @@ class DeckState {
     var loopActive = false
     var rate = 64
     var gain = 100
+    var eqLow = 64
+    var eqMid = 64
+    var eqHigh = 64
+    var filter = 64
     var jog = 0
     var positionMs = 0L
     var durationMs = 0L
@@ -148,6 +152,30 @@ class Mixer {
                 if (target == null) return null
                 target.gain = event.value
                 "$where gain = ${event.value}"
+            }
+
+            ControlId.EQ_LOW -> {
+                if (target == null) return null
+                target.eqLow = event.value
+                "$where low = ${event.value}"
+            }
+
+            ControlId.EQ_MID -> {
+                if (target == null) return null
+                target.eqMid = event.value
+                "$where mid = ${event.value}"
+            }
+
+            ControlId.EQ_HIGH -> {
+                if (target == null) return null
+                target.eqHigh = event.value
+                "$where high = ${event.value}"
+            }
+
+            ControlId.FILTER -> {
+                if (target == null) return null
+                target.filter = event.value
+                "$where filter = ${event.value}"
             }
 
             ControlId.JOG -> {

@@ -417,8 +417,8 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
         LoadBrowseRow(state, actions)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, KnobId.GAIN_A, actions)
-            ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, KnobId.GAIN_B, actions)
+            ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, Deck.A, actions)
+            ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, Deck.B, actions)
         }
         Spacer(Modifier.weight(1f))
         Text("PHASE", color = MutedText, fontSize = 9.sp)
@@ -544,29 +544,59 @@ private fun LoadBrowseRow(state: DjState, actions: DjActions) {
 private fun ChannelStrip(
     label: String,
     accent: Color,
-    deck: DeckUi,
+    ui: DeckUi,
+    deck: Deck,
+    actions: DjActions
+) {
+    val gainKnob = if (deck == Deck.A) KnobId.GAIN_A else KnobId.GAIN_B
+    val lowKnob = if (deck == Deck.A) KnobId.EQ_LOW_A else KnobId.EQ_LOW_B
+    val midKnob = if (deck == Deck.A) KnobId.EQ_MID_A else KnobId.EQ_MID_B
+    val highKnob = if (deck == Deck.A) KnobId.EQ_HIGH_A else KnobId.EQ_HIGH_B
+    val filterKnob = if (deck == Deck.A) KnobId.FILTER_A else KnobId.FILTER_B
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Knob(
+            ui.gain, accent, true, Modifier.size(32.dp),
+            onClick = { actions.onKnobTap(gainKnob) },
+            onChange = { actions.onKnobChange(gainKnob, it) }
+        )
+        Spacer(Modifier.height(2.dp))
+        Text("TRIM", color = MutedText, fontSize = 8.sp)
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            SmallEqKnob("H", ui.eqHigh, accent, highKnob, actions)
+            SmallEqKnob("M", ui.eqMid, accent, midKnob, actions)
+            SmallEqKnob("L", ui.eqLow, accent, lowKnob, actions)
+            SmallEqKnob("F", ui.filter, accent, filterKnob, actions)
+        }
+        Spacer(Modifier.height(8.dp))
+        VuMeter(ui.level, Modifier.width(10.dp).height(60.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = if (ui.pfl) "CUE" else "—",
+            color = if (ui.pfl) accent else MutedText,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun SmallEqKnob(
+    label: String,
+    value: Int,
+    accent: Color,
     knobId: KnobId,
     actions: DjActions
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
         Knob(
-            deck.gain, accent, true, Modifier.size(34.dp),
+            value, accent, true, Modifier.size(20.dp),
             onClick = { actions.onKnobTap(knobId) },
             onChange = { actions.onKnobChange(knobId, it) }
         )
-        Spacer(Modifier.height(3.dp))
-        Text("TRIM", color = MutedText, fontSize = 8.sp)
-        Spacer(Modifier.height(10.dp))
-        VuMeter(deck.level, Modifier.width(12.dp).height(86.dp))
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = if (deck.pfl) "CUE" else "—",
-            color = if (deck.pfl) accent else MutedText,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(label, color = MutedText, fontSize = 7.sp)
     }
 }
 
@@ -829,6 +859,14 @@ private fun ColorRow(label: String, selected: Long, onSelect: (Long) -> Unit) {
 private fun knobValue(state: DjState, knob: KnobId): Int = when (knob) {
     KnobId.GAIN_A -> state.deckA.gain
     KnobId.GAIN_B -> state.deckB.gain
+    KnobId.EQ_LOW_A -> state.deckA.eqLow
+    KnobId.EQ_MID_A -> state.deckA.eqMid
+    KnobId.EQ_HIGH_A -> state.deckA.eqHigh
+    KnobId.FILTER_A -> state.deckA.filter
+    KnobId.EQ_LOW_B -> state.deckB.eqLow
+    KnobId.EQ_MID_B -> state.deckB.eqMid
+    KnobId.EQ_HIGH_B -> state.deckB.eqHigh
+    KnobId.FILTER_B -> state.deckB.filter
     KnobId.MASTER -> state.masterGain
     KnobId.CUE_MIX -> state.cueMix
 }
@@ -838,8 +876,10 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
     val knob = state.activeKnob ?: return
     val value = knobValue(state, knob)
     val accent = when (knob) {
-        KnobId.GAIN_A -> Color(state.settings.deckAColor)
-        KnobId.GAIN_B -> Color(state.settings.deckBColor)
+        KnobId.GAIN_A, KnobId.EQ_LOW_A, KnobId.EQ_MID_A, KnobId.EQ_HIGH_A, KnobId.FILTER_A ->
+            Color(state.settings.deckAColor)
+        KnobId.GAIN_B, KnobId.EQ_LOW_B, KnobId.EQ_MID_B, KnobId.EQ_HIGH_B, KnobId.FILTER_B ->
+            Color(state.settings.deckBColor)
         KnobId.MASTER -> Color(state.settings.deckAColor)
         KnobId.CUE_MIX -> Color(0xFFB0B0C8)
     }

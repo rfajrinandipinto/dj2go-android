@@ -38,6 +38,12 @@ enum class ControlId(val kind: ControlKind) {
     GAIN(ControlKind.FADER),
     JOG(ControlKind.ENCODER),
 
+    // Per-deck EQ and filter
+    EQ_LOW(ControlKind.FADER),
+    EQ_MID(ControlKind.FADER),
+    EQ_HIGH(ControlKind.FADER),
+    FILTER(ControlKind.FADER),
+
     // Beat tools (UI driven)
     BEAT_JUMP(ControlKind.BUTTON),
 

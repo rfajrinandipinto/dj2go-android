@@ -179,6 +179,10 @@ class AudioEngine(context: Context) {
             ControlId.PFL -> if (event.pressed) player.pfl = mixer.deck(deck).pfl
             ControlId.RATE -> player.applySpeed(speedFromFader(event.value, tempoRange))
             ControlId.GAIN -> player.applyGain(event.value / 127f)
+            ControlId.EQ_LOW -> player.eqLow = event.value
+            ControlId.EQ_MID -> player.eqMid = event.value
+            ControlId.EQ_HIGH -> player.eqHigh = event.value
+            ControlId.FILTER -> player.filter = event.value
             ControlId.WHEEL_TOUCH -> if (event.pressed) player.wheelTouched = true else player.endScratch()
             ControlId.JOG -> {
                 val sampleRate = player.track?.sampleRate ?: SAMPLE_RATE
@@ -299,6 +303,9 @@ class AudioEngine(context: Context) {
         val fadeB = curveB * master
         val cueMixFactor = cueMix / 127f
 
+        deckA.eq.update(SAMPLE_RATE, deckA.eqLow, deckA.eqMid, deckA.eqHigh, deckA.filter)
+        deckB.eq.update(SAMPLE_RATE, deckB.eqLow, deckB.eqMid, deckB.eqHigh, deckB.filter)
+
         var peakA = 0f
         var peakB = 0f
         var peakMaster = 0f
@@ -393,8 +400,8 @@ class AudioEngine(context: Context) {
 
         val l0 = track.left(i0)
         val r0 = track.right(i0)
-        val l = (l0 + (track.left(i1) - l0) * frac) / 32768f
-        val r = (r0 + (track.right(i1) - r0) * frac) / 32768f
+        val l = deck.eq.processLeft((l0 + (track.left(i1) - l0) * frac) / 32768f)
+        val r = deck.eq.processRight((r0 + (track.right(i1) - r0) * frac) / 32768f)
 
         var next = pos + step
         if (next < 0.0) next = 0.0

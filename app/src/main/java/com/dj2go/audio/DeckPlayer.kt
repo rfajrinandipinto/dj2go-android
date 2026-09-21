@@ -24,6 +24,21 @@ class DeckPlayer {
     var gain = 1f
 
     @Volatile
+    var eqLow = 64
+
+    @Volatile
+    var eqMid = 64
+
+    @Volatile
+    var eqHigh = 64
+
+    @Volatile
+    var filter = 64
+
+    /** Render-thread only. */
+    val eq = DeckEq()
+
+    @Volatile
     var pfl = false
 
     @Volatile
@@ -60,6 +75,7 @@ class DeckPlayer {
     fun load(track: PcmTrack) {
         playing = false
         this.track = track
+        eq.reset()
         hotCues.fill(UNSET)
         loopActive = false
         loopInFrames = UNSET
