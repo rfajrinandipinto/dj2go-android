@@ -1,7 +1,9 @@
 package com.dj2go
 
+import android.content.Context
 import android.content.Intent
 import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -59,6 +61,20 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     private val actions: DjActions by lazy { buildActions() }
 
+    private val audioManager by lazy {
+        getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        if (change == AudioManager.AUDIOFOCUS_LOSS ||
+            change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+        ) {
+            audio.deck(Deck.A).playing = false
+            audio.deck(Deck.B).playing = false
+            mixer.deckA.playing = false
+            mixer.deckB.playing = false
+        }
+    }
+
     private val pickTrack =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             val deck = pendingDeck
@@ -114,12 +130,20 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     override fun onStart() {
         super.onStart()
+        runCatching {
+            audioManager.requestAudioFocus(
+                focusListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
+        }
         midi.start()
         mainHandler.post(tick)
     }
 
     override fun onStop() {
         super.onStop()
+        runCatching { audioManager.abandonAudioFocus(focusListener) }
         mainHandler.removeCallbacks(tick)
         midi.stop()
     }
