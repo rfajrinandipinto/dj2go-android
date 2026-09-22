@@ -932,6 +932,13 @@ private fun SettingsDialog(state: DjState, actions: DjActions) {
                     s.tempoRange,
                     { "±${(it * 100).toInt()}%" }
                 ) { actions.onSettingsChange(s.copy(tempoRange = it)) }
+                SectionLabel("BEAT")
+                ToggleRow("Quantize (snap cues / loops / jumps)", s.quantize) {
+                    actions.onSettingsChange(s.copy(quantize = it))
+                }
+                ToggleRow("Snap to bar (not beat)", s.quantizeToBar) {
+                    actions.onSettingsChange(s.copy(quantizeToBar = it))
+                }
                 SectionLabel("DECK COLOURS")
                 ColorRow("Deck 1", s.deckAColor) {
                     actions.onSettingsChange(s.copy(deckAColor = it))

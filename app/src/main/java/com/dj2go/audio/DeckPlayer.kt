@@ -48,6 +48,13 @@ class DeckPlayer {
     @Volatile
     var keyLock = false
 
+    /** Quantize (snap) cues/loops/jumps to the beat grid. */
+    @Volatile
+    var quantize = false
+
+    @Volatile
+    var quantizeBeats = 1.0f
+
     /** Render-thread only: key-lock (WSOLA) block generation. */
     val stretcher = TimeStretcher()
     val blockL = FloatArray(AudioEngine.BLOCK_FRAMES)
@@ -105,7 +112,9 @@ class DeckPlayer {
     }
 
     fun togglePlay() {
-        if (track != null) playing = !playing
+        if (track == null) return
+        if (!playing && quantize) seekRequest = snapFrame(positionFrames)
+        playing = !playing
     }
 
     fun cue() {
@@ -144,18 +153,18 @@ class DeckPlayer {
         if (index !in hotCues.indices) return
         val mark = hotCues[index]
         if (mark == UNSET) {
-            hotCues[index] = positionFrames.toLong()
+            hotCues[index] = snapFrame(positionFrames)
         } else {
             seekRequest = mark
         }
     }
 
     fun setLoopIn() {
-        loopInFrames = positionFrames.toLong()
+        loopInFrames = snapFrame(positionFrames)
     }
 
     fun setLoopOut() {
-        loopOutFrames = positionFrames.toLong()
+        loopOutFrames = snapFrame(positionFrames)
         if (loopInFrames != UNSET && loopOutFrames > loopInFrames) loopActive = true
     }
 
@@ -190,7 +199,22 @@ class DeckPlayer {
             seekBy(beats * 500L)
             return
         }
-        seekRequest = (positionFrames + beats * grid.periodFrames).toLong()
+        seekRequest = snapFrame(positionFrames + beats * grid.periodFrames)
+    }
+
+    /** Absolute seek (needle-drop), quantized when enabled. */
+    fun requestSeek(frame: Long) {
+        seekRequest = snapFrame(frame.toDouble())
+    }
+
+    /** Snap a frame position to the beat grid (or bar) when quantize is on. */
+    private fun snapFrame(frame: Double): Long {
+        val grid = track?.beatGrid
+        if (!quantize || grid == null || !grid.valid) return frame.toLong()
+        val step = grid.periodFrames * quantizeBeats
+        if (step <= 0.0) return frame.toLong()
+        val steps = Math.round((frame - grid.firstBeatFrames) / step)
+        return (grid.firstBeatFrames + steps * step).toLong().coerceAtLeast(0L)
     }
 
     fun durationMs(): Long = track?.durationMs ?: 0L

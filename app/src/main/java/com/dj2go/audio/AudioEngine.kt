@@ -94,9 +94,19 @@ class AudioEngine(context: Context) {
         loadCallback = callback
     }
 
-    fun applySettings(curve: CrossfaderCurve, range: Float) {
+    fun applySettings(
+        curve: CrossfaderCurve,
+        range: Float,
+        quantize: Boolean,
+        quantizeToBar: Boolean
+    ) {
         crossfaderCurve = curve
         tempoRange = range
+        val beats = if (quantizeToBar) 4.0f else 1.0f
+        deckA.quantize = quantize
+        deckB.quantize = quantize
+        deckA.quantizeBeats = beats
+        deckB.quantizeBeats = beats
     }
 
     fun setLogSink(sink: ((String) -> Unit)?) {
@@ -165,7 +175,7 @@ class AudioEngine(context: Context) {
     fun seekToFraction(deck: Deck, fraction: Float) {
         val player = deck(deck)
         val track = player.track ?: return
-        player.seekRequest = (fraction.coerceIn(0f, 1f) * track.frameCount).toLong()
+        player.requestSeek((fraction.coerceIn(0f, 1f) * track.frameCount).toLong())
     }
 
     // ---- mix recording ----

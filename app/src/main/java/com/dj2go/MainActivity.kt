@@ -141,7 +141,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         audio.setLoadCallback(this)
         audio.setLogSink { message -> appendLog(message) }
         state.settings = SettingsStore.load(this)
-        audio.applySettings(state.settings.crossfaderCurve, state.settings.tempoRange)
+        audio.applySettings(
+            state.settings.crossfaderCurve,
+            state.settings.tempoRange,
+            state.settings.quantize,
+            state.settings.quantizeToBar
+        )
         refreshOutputs()
         loadLibraryFromPrefs()
         state.updateUrl = loadUpdateUrl().ifEmpty { DEFAULT_MANIFEST_URL }
@@ -295,7 +300,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         onSettingsChange = { settings ->
             state.settings = settings
             SettingsStore.save(this, settings)
-            audio.applySettings(settings.crossfaderCurve, settings.tempoRange)
+            audio.applySettings(
+                settings.crossfaderCurve,
+                settings.tempoRange,
+                settings.quantize,
+                settings.quantizeToBar
+            )
         },
         onToggleRecord = {
             if (state.recording) {

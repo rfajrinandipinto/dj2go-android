@@ -21,6 +21,8 @@ data class DjSettings(
     val showBarBeat: Boolean = true,
     val crossfaderCurve: CrossfaderCurve = CrossfaderCurve.SMOOTH,
     val tempoRange: Float = 0.10f,
+    val quantize: Boolean = true,
+    val quantizeToBar: Boolean = false,
     val deckAColor: Long = 0xFF2E9BFF,
     val deckBColor: Long = 0xFFFF7A2E
 )
@@ -51,6 +53,8 @@ object SettingsStore {
                 prefs.getString("crossfaderCurve", null), defaults.crossfaderCurve
             ),
             tempoRange = prefs.getFloat("tempoRange", defaults.tempoRange),
+            quantize = prefs.getBoolean("quantize", defaults.quantize),
+            quantizeToBar = prefs.getBoolean("quantizeToBar", defaults.quantizeToBar),
             deckAColor = prefs.getLong("deckAColor", defaults.deckAColor),
             deckBColor = prefs.getLong("deckBColor", defaults.deckBColor)
         )
@@ -67,6 +71,8 @@ object SettingsStore {
             .putBoolean("showBarBeat", settings.showBarBeat)
             .putString("crossfaderCurve", settings.crossfaderCurve.name)
             .putFloat("tempoRange", settings.tempoRange)
+            .putBoolean("quantize", settings.quantize)
+            .putBoolean("quantizeToBar", settings.quantizeToBar)
             .putLong("deckAColor", settings.deckAColor)
             .putLong("deckBColor", settings.deckBColor)
             .apply()
