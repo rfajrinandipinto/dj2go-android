@@ -81,6 +81,7 @@ class AudioEngine(context: Context) {
     private var tonePhase = 0.0
 
     private val scratch = FloatArray(4)
+    private val fxOut = FloatArray(2)
 
     init {
         rebuildOutput()
@@ -289,6 +290,8 @@ class AudioEngine(context: Context) {
             ControlId.EQ_MID -> player.eqMid = event.value
             ControlId.EQ_HIGH -> player.eqHigh = event.value
             ControlId.FILTER -> player.filter = event.value
+            ControlId.FX -> player.fxOn = mixer.deck(deck).fxOn
+            ControlId.FX_WET -> player.fxWet = event.value
             ControlId.WHEEL_TOUCH -> if (event.pressed) player.wheelTouched = true else player.endScratch()
             ControlId.JOG -> {
                 val sampleRate = player.track?.sampleRate ?: SAMPLE_RATE
@@ -416,6 +419,12 @@ class AudioEngine(context: Context) {
 
         deckA.eq.update(SAMPLE_RATE, deckA.eqLow, deckA.eqMid, deckA.eqHigh, deckA.filter)
         deckB.eq.update(SAMPLE_RATE, deckB.eqLow, deckB.eqMid, deckB.eqHigh, deckB.filter)
+        deckA.fx.configure(
+            SAMPLE_RATE, deckA.track?.beatGrid?.bpm ?: 0f, DeckFx.BEATS, deckA.fxWet, deckA.fxOn
+        )
+        deckB.fx.configure(
+            SAMPLE_RATE, deckB.track?.beatGrid?.bpm ?: 0f, DeckFx.BEATS, deckB.fxWet, deckB.fxOn
+        )
         prepareDeckBlock(deckA)
         prepareDeckBlock(deckB)
 
@@ -511,8 +520,13 @@ class AudioEngine(context: Context) {
         scratch[3] = 0f
 
         if (deck.blockReady) {
-            val l = deck.eq.processLeft(deck.blockL[index])
-            val r = deck.eq.processRight(deck.blockR[index])
+            deck.fx.process(
+                deck.eq.processLeft(deck.blockL[index]),
+                deck.eq.processRight(deck.blockR[index]),
+                fxOut
+            )
+            val l = fxOut[0]
+            val r = fxOut[1]
             val gain = deck.gain
             scratch[0] = l * gain * masterFactor
             scratch[1] = r * gain * masterFactor
@@ -562,8 +576,13 @@ class AudioEngine(context: Context) {
 
         val l0 = track.left(i0)
         val r0 = track.right(i0)
-        val l = deck.eq.processLeft((l0 + (track.left(i1) - l0) * frac) / 32768f)
-        val r = deck.eq.processRight((r0 + (track.right(i1) - r0) * frac) / 32768f)
+        deck.fx.process(
+            deck.eq.processLeft((l0 + (track.left(i1) - l0) * frac) / 32768f),
+            deck.eq.processRight((r0 + (track.right(i1) - r0) * frac) / 32768f),
+            fxOut
+        )
+        val l = fxOut[0]
+        val r = fxOut[1]
 
         var next = pos + step
         if (next < 0.0) next = 0.0

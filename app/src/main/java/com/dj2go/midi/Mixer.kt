@@ -18,6 +18,8 @@ class DeckState {
     var eqMid = 64
     var eqHigh = 64
     var filter = 64
+    var fxOn = false
+    var fxWet = 0
     var jog = 0
     var positionMs = 0L
     var durationMs = 0L
@@ -177,6 +179,18 @@ class Mixer {
                 if (target == null) return null
                 target.filter = event.value
                 "$where filter = ${event.value}"
+            }
+
+            ControlId.FX -> {
+                if (!event.pressed || target == null) return null
+                target.fxOn = !target.fxOn
+                "$where FX -> ${onOff(target.fxOn)}"
+            }
+
+            ControlId.FX_WET -> {
+                if (target == null) return null
+                target.fxWet = event.value
+                "$where FX wet = ${event.value}"
             }
 
             ControlId.JOG -> {

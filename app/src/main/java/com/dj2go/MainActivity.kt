@@ -222,10 +222,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
                 KnobId.EQ_MID_A -> ControlEvent(Deck.A, ControlId.EQ_MID, value, 0, false, 0, null)
                 KnobId.EQ_HIGH_A -> ControlEvent(Deck.A, ControlId.EQ_HIGH, value, 0, false, 0, null)
                 KnobId.FILTER_A -> ControlEvent(Deck.A, ControlId.FILTER, value, 0, false, 0, null)
+                KnobId.FX_WET_A -> ControlEvent(Deck.A, ControlId.FX_WET, value, 0, false, 0, null)
                 KnobId.EQ_LOW_B -> ControlEvent(Deck.B, ControlId.EQ_LOW, value, 0, false, 0, null)
                 KnobId.EQ_MID_B -> ControlEvent(Deck.B, ControlId.EQ_MID, value, 0, false, 0, null)
                 KnobId.EQ_HIGH_B -> ControlEvent(Deck.B, ControlId.EQ_HIGH, value, 0, false, 0, null)
                 KnobId.FILTER_B -> ControlEvent(Deck.B, ControlId.FILTER, value, 0, false, 0, null)
+                KnobId.FX_WET_B -> ControlEvent(Deck.B, ControlId.FX_WET, value, 0, false, 0, null)
                 KnobId.MASTER ->
                     ControlEvent(null, ControlId.MASTER_GAIN, value, 0, false, 0, null)
                 KnobId.CUE_MIX ->

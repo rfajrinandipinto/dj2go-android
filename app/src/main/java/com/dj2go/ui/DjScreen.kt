@@ -646,6 +646,7 @@ private fun ChannelStrip(
     val midKnob = if (deck == Deck.A) KnobId.EQ_MID_A else KnobId.EQ_MID_B
     val highKnob = if (deck == Deck.A) KnobId.EQ_HIGH_A else KnobId.EQ_HIGH_B
     val filterKnob = if (deck == Deck.A) KnobId.FILTER_A else KnobId.FILTER_B
+    val fxWetKnob = if (deck == Deck.A) KnobId.FX_WET_A else KnobId.FX_WET_B
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
@@ -662,6 +663,28 @@ private fun ChannelStrip(
             SmallEqKnob("M", ui.eqMid, accent, midKnob, actions)
             SmallEqKnob("L", ui.eqLow, accent, lowKnob, actions)
             SmallEqKnob("F", ui.filter, accent, filterKnob, actions)
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Box(
+                Modifier
+                    .size(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(if (ui.fxOn) accent else Color(0xFF1B1B26))
+                    .clickable { actions.onPad(deck, ControlId.FX, 0) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "FX",
+                    color = if (ui.fxOn) Color.Black else MutedText,
+                    fontSize = 7.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            SmallEqKnob("W", ui.fxWet, accent, fxWetKnob, actions)
         }
         Spacer(Modifier.height(8.dp))
         VuMeter(ui.level, Modifier.width(10.dp).height(60.dp))
@@ -1010,10 +1033,12 @@ private fun knobValue(state: DjState, knob: KnobId): Int = when (knob) {
     KnobId.EQ_MID_A -> state.deckA.eqMid
     KnobId.EQ_HIGH_A -> state.deckA.eqHigh
     KnobId.FILTER_A -> state.deckA.filter
+    KnobId.FX_WET_A -> state.deckA.fxWet
     KnobId.EQ_LOW_B -> state.deckB.eqLow
     KnobId.EQ_MID_B -> state.deckB.eqMid
     KnobId.EQ_HIGH_B -> state.deckB.eqHigh
     KnobId.FILTER_B -> state.deckB.filter
+    KnobId.FX_WET_B -> state.deckB.fxWet
     KnobId.MASTER -> state.masterGain
     KnobId.CUE_MIX -> state.cueMix
 }
@@ -1023,10 +1048,10 @@ private fun KnobDialog(state: DjState, actions: DjActions) {
     val knob = state.activeKnob ?: return
     val value = knobValue(state, knob)
     val accent = when (knob) {
-        KnobId.GAIN_A, KnobId.EQ_LOW_A, KnobId.EQ_MID_A, KnobId.EQ_HIGH_A, KnobId.FILTER_A ->
-            Color(state.settings.deckAColor)
-        KnobId.GAIN_B, KnobId.EQ_LOW_B, KnobId.EQ_MID_B, KnobId.EQ_HIGH_B, KnobId.FILTER_B ->
-            Color(state.settings.deckBColor)
+        KnobId.GAIN_A, KnobId.EQ_LOW_A, KnobId.EQ_MID_A, KnobId.EQ_HIGH_A, KnobId.FILTER_A,
+        KnobId.FX_WET_A -> Color(state.settings.deckAColor)
+        KnobId.GAIN_B, KnobId.EQ_LOW_B, KnobId.EQ_MID_B, KnobId.EQ_HIGH_B, KnobId.FILTER_B,
+        KnobId.FX_WET_B -> Color(state.settings.deckBColor)
         KnobId.MASTER -> Color(state.settings.deckAColor)
         KnobId.CUE_MIX -> Color(0xFFB0B0C8)
     }

@@ -44,6 +44,10 @@ enum class ControlId(val kind: ControlKind) {
     EQ_HIGH(ControlKind.FADER),
     FILTER(ControlKind.FADER),
 
+    // Per-deck FX
+    FX(ControlKind.BUTTON),
+    FX_WET(ControlKind.FADER),
+
     // Beat tools (UI driven)
     BEAT_JUMP(ControlKind.BUTTON),
     KEY_LOCK(ControlKind.BUTTON),

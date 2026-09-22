@@ -35,8 +35,15 @@ class DeckPlayer {
     @Volatile
     var filter = 64
 
+    @Volatile
+    var fxOn = false
+
+    @Volatile
+    var fxWet = 0
+
     /** Render-thread only. */
     val eq = DeckEq()
+    val fx = DeckFx()
 
     @Volatile
     var keyLock = false
@@ -85,6 +92,7 @@ class DeckPlayer {
         playing = false
         this.track = track
         eq.reset()
+        fx.reset()
         stretcher.reset()
         blockReady = false
         hotCues.fill(UNSET)
