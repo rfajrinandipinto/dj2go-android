@@ -18,6 +18,7 @@ object LibraryStore {
     private const val PREFS = "dj2go_library"
     private const val KEY_FOLDER = "folder"
     private const val KEY_TRACKS = "tracks"
+    private const val KEY_ANALYSIS = "analysis"
     private const val MAX_TRACKS = 2000
     private const val MAX_DEPTH = 6
 
@@ -54,6 +55,27 @@ object LibraryStore {
             })
         }
         prefs(context).edit().putString(KEY_TRACKS, array.toString()).apply()
+    }
+
+    fun analysis(context: Context): Map<String, TrackAnalysis> {
+        val raw = prefs(context).getString(KEY_ANALYSIS, null) ?: return emptyMap()
+        return runCatching {
+            val obj = JSONObject(raw)
+            obj.keys().asSequence().associateWith { uri ->
+                val entry = obj.getJSONObject(uri)
+                TrackAnalysis(entry.optDouble("bpm", 0.0).toFloat(), entry.optString("key", ""))
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    fun saveAnalysis(context: Context, uri: String, bpm: Float, key: String) {
+        val current = analysis(context).toMutableMap()
+        current[uri] = TrackAnalysis(bpm, key)
+        val obj = JSONObject()
+        current.forEach { (u, a) ->
+            obj.put(u, JSONObject().put("bpm", a.bpm.toDouble()).put("key", a.key))
+        }
+        prefs(context).edit().putString(KEY_ANALYSIS, obj.toString()).apply()
     }
 
     fun scan(context: Context, treeUri: Uri): List<LibraryTrack> {

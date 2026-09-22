@@ -845,6 +845,13 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
                         maxLines = 1,
                         modifier = Modifier.weight(1f)
                     )
+                    state.libraryAnalysis[track.uri]?.let { info ->
+                        Text(
+                            text = "%.0f  %s".format(info.bpm, info.key),
+                            color = MutedText,
+                            fontSize = 10.sp
+                        )
+                    }
                 }
             }
             if (shown.isEmpty()) {

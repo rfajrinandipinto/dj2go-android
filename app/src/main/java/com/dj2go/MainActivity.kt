@@ -51,10 +51,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     private var pendingDeck: Deck? = null
     private var pendingSampler: Int? = null
+    private var serviceRunning = false
 
     private val tick = object : Runnable {
         override fun run() {
             state.refresh(mixer, audio)
+            updatePlaybackService()
             mainHandler.postDelayed(this, TICK_MS)
         }
     }
@@ -126,6 +128,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
                 DjScreen(state, actions)
             }
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            runCatching {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+            }
+        }
     }
 
     override fun onStart() {
@@ -150,7 +158,27 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     override fun onDestroy() {
         super.onDestroy()
+        if (serviceRunning) {
+            runCatching { stopService(Intent(this, PlaybackService::class.java)) }
+            serviceRunning = false
+        }
         audio.release()
+    }
+
+    private fun updatePlaybackService() {
+        val playing = audio.deck(Deck.A).playing || audio.deck(Deck.B).playing
+        if (playing && !serviceRunning) {
+            runCatching {
+                androidx.core.content.ContextCompat.startForegroundService(
+                    this,
+                    Intent(this, PlaybackService::class.java)
+                )
+            }
+            serviceRunning = true
+        } else if (!playing && serviceRunning) {
+            runCatching { stopService(Intent(this, PlaybackService::class.java)) }
+            serviceRunning = false
+        }
     }
 
     private fun buildActions(): DjActions = DjActions(
@@ -329,6 +357,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     private fun loadLibraryFromPrefs() {
         state.library = LibraryStore.tracks(this)
+        state.libraryAnalysis = LibraryStore.analysis(this)
         LibraryStore.folder(this)?.let { folder ->
             state.libraryFolderLabel = Uri.parse(folder).lastPathSegment ?: folder
             if (state.library.isEmpty()) rescanLibrary()
@@ -348,6 +377,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
             LibraryStore.saveTracks(this, tracks)
             mainHandler.post {
                 state.library = tracks
+                state.libraryAnalysis = LibraryStore.analysis(this@MainActivity)
                 state.libraryIndex =
                     state.libraryIndex.coerceIn(0, (tracks.size - 1).coerceAtLeast(0))
                 state.libraryScanning = false
@@ -473,6 +503,12 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         val deckState = mixer.deck(deck)
         deckState.trackName = name
         deckState.durationMs = durationMs
+        audio.deck(deck).track?.let { track ->
+            if (track.beatGrid.valid) {
+                LibraryStore.saveAnalysis(this, uri.toString(), track.beatGrid.bpm, track.key)
+                state.libraryAnalysis = LibraryStore.analysis(this)
+            }
+        }
         appendLog("-- loaded $name into Deck $deck --")
         state.refresh(mixer, audio)
     }

@@ -9,6 +9,7 @@ import com.dj2go.audio.DeckPlayer
 import com.dj2go.audio.OutputDevices
 import com.dj2go.audio.WaveformData
 import com.dj2go.library.LibraryTrack
+import com.dj2go.library.TrackAnalysis
 import com.dj2go.midi.Deck
 import com.dj2go.midi.DeckState
 import com.dj2go.midi.Mixer
@@ -126,6 +127,7 @@ class DjState {
     var selectedCue by mutableStateOf<OutputDevices.Entry?>(null)
 
     var library by mutableStateOf<List<LibraryTrack>>(emptyList())
+    var libraryAnalysis by mutableStateOf<Map<String, TrackAnalysis>>(emptyMap())
     var libraryIndex by mutableStateOf(0)
     var libraryFolderLabel by mutableStateOf("No folder selected")
     var libraryScanning by mutableStateOf(false)
