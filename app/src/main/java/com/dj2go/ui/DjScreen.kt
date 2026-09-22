@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,7 +102,8 @@ class DjActions(
     val onSettingsChange: (DjSettings) -> Unit,
     val onToggleRecord: () -> Unit,
     val onSeek: (Deck, Float) -> Unit,
-    val onPadMode: (Deck, PadMode) -> Unit
+    val onPadMode: (Deck, PadMode) -> Unit,
+    val onAnalyze: () -> Unit
 )
 
 @Composable
@@ -174,6 +176,7 @@ private fun DeckPanel(
     val accent = Color(if (deck == Deck.A) settings.deckAColor else settings.deckBColor)
     val timeMode = if (deck == Deck.A) state.timeModeA else state.timeModeB
     val loading = if (deck == Deck.A) state.loadingA else state.loadingB
+    val posState = if (deck == Deck.A) state.deckAPos else state.deckBPos
     val timeText = when (timeMode) {
         TimeMode.ELAPSED -> Mixer.formatTime(ui.positionMs)
         TimeMode.REMAINING ->
@@ -231,7 +234,7 @@ private fun DeckPanel(
         if (settings.showOverview) {
             OverviewWaveform(
                 ui.waveform,
-                ui.positionFrames,
+                posState,
                 accent,
                 settings.colorMode,
                 onSeek = { fraction -> actions.onSeek(deck, fraction) },
@@ -243,7 +246,7 @@ private fun DeckPanel(
             MainWaveform(
                 ui.waveform,
                 ui.beatGrid,
-                ui.positionFrames,
+                posState,
                 ui.sampleRate,
                 settings.secondsVisible,
                 ui.hotCues,
@@ -291,7 +294,7 @@ private fun DeckPanel(
 
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth().height(150.dp)) {
-            JogWheel(ui.positionFrames, ui.sampleRate, accent, ui.playing, Modifier.size(140.dp))
+            JogWheel(posState, ui.sampleRate, accent, ui.playing, Modifier.size(140.dp))
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 TransportRow(deck, ui, accent, actions)
@@ -510,15 +513,15 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
         LoadBrowseRow(state, actions)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, Deck.A, actions)
-            ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, Deck.B, actions)
+            ChannelStrip("1", Color(state.settings.deckAColor), state.deckA, state.deckALevel, Deck.A, actions)
+            ChannelStrip("2", Color(state.settings.deckBColor), state.deckB, state.deckBLevel, Deck.B, actions)
         }
         Spacer(Modifier.weight(1f))
         Text("PHASE", color = MutedText, fontSize = 9.sp)
         Spacer(Modifier.height(2.dp))
         PhaseMeter(
-            state.deckA.phase,
-            state.deckB.phase,
+            state.deckAPhase,
+            state.deckBPhase,
             Modifier.fillMaxWidth().height(12.dp)
         )
         Spacer(Modifier.height(8.dp))
@@ -543,7 +546,7 @@ private fun MixerPanel(state: DjState, actions: DjActions, modifier: Modifier) {
                 )
                 Text("MASTER", color = MutedText, fontSize = 8.sp)
             }
-            VuMeter(state.masterLevel, Modifier.width(12.dp).height(48.dp))
+            VuMeter(state.masterLevelState, Modifier.width(12.dp).height(48.dp))
         }
         Spacer(Modifier.height(10.dp))
         Text("CROSSFADER", color = MutedText, fontSize = 9.sp)
@@ -638,6 +641,7 @@ private fun ChannelStrip(
     label: String,
     accent: Color,
     ui: DeckUi,
+    level: State<Float>,
     deck: Deck,
     actions: DjActions
 ) {
@@ -687,7 +691,7 @@ private fun ChannelStrip(
             SmallEqKnob("W", ui.fxWet, accent, fxWetKnob, actions)
         }
         Spacer(Modifier.height(8.dp))
-        VuMeter(ui.level, Modifier.width(10.dp).height(60.dp))
+        VuMeter(level, Modifier.width(10.dp).height(60.dp))
         Spacer(Modifier.height(4.dp))
         Text(
             text = if (ui.pfl) "CUE" else "—",
@@ -795,6 +799,14 @@ private fun LibraryOverlay(state: DjState, actions: DjActions, modifier: Modifie
             TransportButton("FOLDER", false, DeckAAccent, actions.onPickFolder, Modifier.width(70.dp).height(26.dp))
             Spacer(Modifier.width(6.dp))
             TransportButton("RESCAN", false, Color(0xFF3A3A4C), actions.onRescan, Modifier.width(70.dp).height(26.dp))
+            Spacer(Modifier.width(6.dp))
+            TransportButton(
+                if (state.analysisRunning) "${state.analysisDone}/${state.analysisTotal}" else "ANALYZE",
+                state.analysisRunning,
+                Color(0xFFB0B0C8),
+                actions.onAnalyze,
+                Modifier.width(88.dp).height(26.dp)
+            )
         }
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

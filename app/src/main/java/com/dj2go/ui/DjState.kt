@@ -98,6 +98,16 @@ class DjState {
     var browse by mutableStateOf(0)
     var masterLevel by mutableStateOf(0f)
 
+    // Fast-changing values, read inside Canvas draw lambdas so they only trigger
+    // a redraw (not a full recomposition) each frame.
+    val deckAPos = mutableStateOf(0.0)
+    val deckBPos = mutableStateOf(0.0)
+    val deckALevel = mutableStateOf(0f)
+    val deckBLevel = mutableStateOf(0f)
+    val deckAPhase = mutableStateOf(0f)
+    val deckBPhase = mutableStateOf(0f)
+    val masterLevelState = mutableStateOf(0f)
+
     var timeModeA by mutableStateOf(TimeMode.ELAPSED)
     var timeModeB by mutableStateOf(TimeMode.ELAPSED)
     var padModeA by mutableStateOf(PadMode.CUE)
@@ -135,6 +145,9 @@ class DjState {
     var browseAngle by mutableStateOf(0f)
     var libraryQuery by mutableStateOf("")
     var librarySortDesc by mutableStateOf(false)
+    var analysisRunning by mutableStateOf(false)
+    var analysisDone by mutableStateOf(0)
+    var analysisTotal by mutableStateOf(0)
 
     var showUpdateDialog by mutableStateOf(false)
     var updateUrl by mutableStateOf("")
@@ -150,6 +163,7 @@ class DjState {
         headphoneGain = mixer.headphoneGain
         browse = mixer.browse
         masterLevel = audio.levelMaster
+        masterLevelState.value = audio.levelMaster
         samplerNames = audio.samplerNames()
         samplerPlaying = audio.samplerPlaying()
     }

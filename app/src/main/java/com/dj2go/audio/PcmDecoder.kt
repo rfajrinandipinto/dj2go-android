@@ -72,6 +72,29 @@ object PcmDecoder {
         return PcmData(samples, result.sampleRate)
     }
 
+    /** Decodes to a throwaway temp file and returns just BPM/key (for the crate). */
+    fun analyze(context: Context, uri: Uri): Analysis {
+        val tempFile = File.createTempFile("analyze_", ".pcm", context.cacheDir)
+        try {
+            val result = BufferedOutputStream(FileOutputStream(tempFile)).use { sink ->
+                runDecode(context, uri, sink, wantWaveform = false)
+            }
+            if (result.frames <= 0) return Analysis(0f, "", "")
+            val source = RandomAccessFile(tempFile, "r")
+            val mapped = source.channel.map(FileChannel.MapMode.READ_ONLY, 0, source.length())
+            mapped.order(ByteOrder.LITTLE_ENDIAN)
+            val grid = BeatDetector.detect(mapped, result.frames, result.sampleRate)
+            val key = KeyDetector.detect(mapped, result.frames, result.sampleRate)
+            source.close()
+            return Analysis(grid.bpm, key?.name ?: "", key?.camelot ?: "")
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    /** Result of [analyze]. */
+    class Analysis(val bpm: Float, val key: String, val camelot: String)
+
     private fun runDecode(
         context: Context,
         uri: Uri,

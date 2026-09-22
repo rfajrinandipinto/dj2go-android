@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.dj2go.audio.AudioEngine
 import com.dj2go.audio.OutputDevices
+import com.dj2go.audio.PcmDecoder
 import com.dj2go.library.LibraryStore
 import com.dj2go.midi.ControlEvent
 import com.dj2go.midi.ControlId
@@ -55,10 +56,33 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     private val tick = object : Runnable {
         override fun run() {
+            updateFastState()
+            mainHandler.postDelayed(this, FAST_TICK_MS)
+        }
+    }
+
+    private val slowTick = object : Runnable {
+        override fun run() {
             state.refresh(mixer, audio)
             updatePlaybackService()
-            mainHandler.postDelayed(this, TICK_MS)
+            mainHandler.postDelayed(this, SLOW_TICK_MS)
         }
+    }
+
+    private fun updateFastState() {
+        state.deckAPos.value = audio.deck(Deck.A).positionFrames
+        state.deckBPos.value = audio.deck(Deck.B).positionFrames
+        state.deckALevel.value = audio.levelA
+        state.deckBLevel.value = audio.levelB
+        state.masterLevelState.value = audio.levelMaster
+        state.deckAPhase.value = phaseOf(Deck.A)
+        state.deckBPhase.value = phaseOf(Deck.B)
+    }
+
+    private fun phaseOf(deck: Deck): Float {
+        val track = audio.deck(deck).track ?: return 0f
+        if (!track.beatGrid.valid) return 0f
+        return track.beatGrid.phase(audio.deck(deck).positionFrames).toFloat()
     }
 
     private val actions: DjActions by lazy { buildActions() }
@@ -147,12 +171,14 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         }
         midi.start()
         mainHandler.post(tick)
+        mainHandler.post(slowTick)
     }
 
     override fun onStop() {
         super.onStop()
         runCatching { audioManager.abandonAudioFocus(focusListener) }
         mainHandler.removeCallbacks(tick)
+        mainHandler.removeCallbacks(slowTick)
         midi.stop()
     }
 
@@ -289,7 +315,8 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         onSeek = { deck, fraction -> audio.seekToFraction(deck, fraction) },
         onPadMode = { deck, mode ->
             if (deck == Deck.A) state.padModeA = mode else state.padModeB = mode
-        }
+        },
+        onAnalyze = { analyzeLibrary() }
     )
 
     // ---- MIDI ----
@@ -390,6 +417,39 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         state.browseAngle += delta * 24f
         if (state.library.isEmpty()) return
         state.libraryIndex = (state.libraryIndex + delta).coerceIn(0, state.library.size - 1)
+    }
+
+    private fun analyzeLibrary() {
+        if (state.analysisRunning) return
+        val pending = state.library.filter { state.libraryAnalysis[it.uri] == null }
+        if (pending.isEmpty()) {
+            appendLog("-- nothing to analyse --")
+            return
+        }
+        state.analysisRunning = true
+        state.analysisDone = 0
+        state.analysisTotal = pending.size
+        appendLog("-- analysing ${pending.size} tracks... --")
+        Thread {
+            pending.forEach { track ->
+                runCatching {
+                    val analysis = PcmDecoder.analyze(this, Uri.parse(track.uri))
+                    if (analysis.bpm > 0f) {
+                        LibraryStore.saveAnalysis(
+                            this, track.uri, analysis.bpm, analysis.key
+                        )
+                    }
+                }
+                mainHandler.post {
+                    state.analysisDone += 1
+                    state.libraryAnalysis = LibraryStore.analysis(this)
+                }
+            }
+            mainHandler.post {
+                state.analysisRunning = false
+                appendLog("-- analysis complete --")
+            }
+        }.start()
     }
 
     private fun loadForDeck(deck: Deck) {
@@ -607,7 +667,8 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
 
     companion object {
         private const val MAX_LOG_CHARS = 8000
-        private const val TICK_MS = 16L
+        private const val FAST_TICK_MS = 33L
+        private const val SLOW_TICK_MS = 120L
         private const val DEFAULT_MANIFEST_URL =
             "https://raw.githubusercontent.com/rfajrinandipinto/dj2go-android/main/update.json"
     }

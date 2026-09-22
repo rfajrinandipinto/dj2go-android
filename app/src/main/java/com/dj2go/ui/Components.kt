@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,7 +73,7 @@ private const val DETENT_THRESHOLD = 3
 fun MainWaveform(
     waveform: WaveformData?,
     beatGrid: BeatGrid?,
-    positionFrames: Double,
+    position: State<Double>,
     sampleRate: Int,
     secondsVisible: Float,
     cuePositions: LongArray,
@@ -100,6 +101,7 @@ fun MainWaveform(
         val width = size.width
         val height = size.height
         val midY = height / 2f
+        val positionFrames = position.value
         if (waveform == null || width <= 0f || waveform.bucketCount == 0) return@Canvas
 
         val bucketFrames = waveform.bucketFrames
@@ -218,7 +220,7 @@ fun MainWaveform(
 @Composable
 fun OverviewWaveform(
     waveform: WaveformData?,
-    positionFrames: Double,
+    position: State<Double>,
     accent: Color,
     colorMode: WaveColorMode,
     onSeek: ((Float) -> Unit)? = null,
@@ -236,6 +238,7 @@ fun OverviewWaveform(
         val width = size.width
         val height = size.height
         val midY = height / 2f
+        val positionFrames = position.value
         if (waveform == null || width <= 0f || waveform.bucketCount == 0) return@Canvas
 
         val buckets = waveform.bucketCount
@@ -294,7 +297,7 @@ private val cueColors = listOf(
 
 /** Shows how far the two decks are out of phase (centre = locked). */
 @Composable
-fun PhaseMeter(phaseA: Float, phaseB: Float, modifier: Modifier = Modifier) {
+fun PhaseMeter(phaseA: State<Float>, phaseB: State<Float>, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         drawRect(Color(0xFF14141C))
         val midY = size.height / 2f
@@ -304,7 +307,7 @@ fun PhaseMeter(phaseA: Float, phaseB: Float, modifier: Modifier = Modifier) {
             Offset(size.width / 2f, size.height),
             strokeWidth = 1f
         )
-        var diff = phaseA - phaseB
+        var diff = phaseA.value - phaseB.value
         if (diff > 0.5f) diff -= 1f
         if (diff < -0.5f) diff += 1f
         val x = (size.width / 2f + diff * size.width).coerceIn(0f, size.width)
@@ -321,13 +324,14 @@ fun PhaseMeter(phaseA: Float, phaseB: Float, modifier: Modifier = Modifier) {
 
 @Composable
 fun JogWheel(
-    positionFrames: Double,
+    position: State<Double>,
     sampleRate: Int,
     accent: Color,
     playing: Boolean,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier) {
+        val positionFrames = position.value
         val radius = size.minDimension / 2f
         val center = Offset(size.width / 2f, size.height / 2f)
         drawCircle(Color(0xFF15151F), radius = radius, center = center)
@@ -428,13 +432,14 @@ fun Knob(
 }
 
 @Composable
-fun VuMeter(level: Float, modifier: Modifier = Modifier) {
+fun VuMeter(level: State<Float>, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         drawRect(Color(0xFF0C0C14))
-        val filled = level.coerceIn(0f, 1f) * size.height
+        val value = level.value
+        val filled = value.coerceIn(0f, 1f) * size.height
         val color = when {
-            level > 0.9f -> Color(0xFFFF3B30)
-            level > 0.7f -> Color(0xFFFFCC00)
+            value > 0.9f -> Color(0xFFFF3B30)
+            value > 0.7f -> Color(0xFFFFCC00)
             else -> Color(0xFF34C759)
         }
         drawRect(color, topLeft = Offset(0f, size.height - filled), size = Size(size.width, filled))
