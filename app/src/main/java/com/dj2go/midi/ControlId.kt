@@ -46,6 +46,7 @@ enum class ControlId(val kind: ControlKind) {
 
     // Beat tools (UI driven)
     BEAT_JUMP(ControlKind.BUTTON),
+    KEY_LOCK(ControlKind.BUTTON),
 
     // Mixer
     CROSSFADER(ControlKind.FADER),

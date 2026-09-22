@@ -39,6 +39,15 @@ class DeckPlayer {
     val eq = DeckEq()
 
     @Volatile
+    var keyLock = false
+
+    /** Render-thread only: key-lock (WSOLA) block generation. */
+    val stretcher = TimeStretcher()
+    val blockL = FloatArray(AudioEngine.BLOCK_FRAMES)
+    val blockR = FloatArray(AudioEngine.BLOCK_FRAMES)
+    var blockReady = false
+
+    @Volatile
     var pfl = false
 
     @Volatile
@@ -76,6 +85,8 @@ class DeckPlayer {
         playing = false
         this.track = track
         eq.reset()
+        stretcher.reset()
+        blockReady = false
         hotCues.fill(UNSET)
         loopActive = false
         loopInFrames = UNSET

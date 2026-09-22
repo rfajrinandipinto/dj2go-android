@@ -7,6 +7,7 @@ class DeckState {
     var cue = false
     var sync = false
     var pfl = false
+    var keyLock = false
     var wheelTouched = false
     var loopIn = false
     var loopOut = false
@@ -212,6 +213,12 @@ class Mixer {
             ControlId.BEAT_JUMP -> {
                 if (!event.pressed || target == null) return null
                 "$where BEAT JUMP ${event.value}"
+            }
+
+            ControlId.KEY_LOCK -> {
+                if (!event.pressed || target == null) return null
+                target.keyLock = !target.keyLock
+                "$where KEY LOCK -> ${onOff(target.keyLock)}"
             }
 
             ControlId.CUE_MIX -> {

@@ -301,6 +301,11 @@ class AudioEngine(context: Context) {
             ControlId.RELOOP_STOP -> if (event.pressed) player.stopLoop()
             ControlId.BEAT_LOOP -> if (event.pressed) player.autoLoop(beatsForLoop(event.index))
             ControlId.BEAT_JUMP -> if (event.pressed) player.beatJump(event.value)
+            ControlId.KEY_LOCK -> {
+                player.keyLock = mixer.deck(deck).keyLock
+                player.stretcher.reset()
+                player.blockReady = false
+            }
             ControlId.SAMPLER -> if (event.pressed) {
                 val offset = if (deck == Deck.A) 0 else Sampler.SLOTS_PER_DECK
                 sampler.trigger(offset + event.index)
@@ -411,6 +416,8 @@ class AudioEngine(context: Context) {
 
         deckA.eq.update(SAMPLE_RATE, deckA.eqLow, deckA.eqMid, deckA.eqHigh, deckA.filter)
         deckB.eq.update(SAMPLE_RATE, deckB.eqLow, deckB.eqMid, deckB.eqHigh, deckB.filter)
+        prepareDeckBlock(deckA)
+        prepareDeckBlock(deckB)
 
         var peakA = 0f
         var peakB = 0f
@@ -420,14 +427,14 @@ class AudioEngine(context: Context) {
         renderTone()
 
         for (i in 0 until BLOCK_FRAMES) {
-            sampleDeck(deckA, fadeA, head)
+            sampleDeck(deckA, fadeA, head, i)
             peakA = maxOf(peakA, abs(scratch[0]), abs(scratch[1]))
             var mL = scratch[0]
             var mR = scratch[1]
             var cL = scratch[2]
             var cR = scratch[3]
 
-            sampleDeck(deckB, fadeB, head)
+            sampleDeck(deckB, fadeB, head, i)
             peakB = maxOf(peakB, abs(scratch[0]), abs(scratch[1]))
             mL += scratch[0]
             mR += scratch[1]
@@ -463,11 +470,58 @@ class AudioEngine(context: Context) {
         if (recordingFlag) recordBlock(main, channels)
     }
 
-    private fun sampleDeck(deck: DeckPlayer, masterFactor: Float, headFactor: Float) {
+    /** Key-lock block generation: WSOLA output for the whole block, if enabled. */
+    private fun prepareDeckBlock(deck: DeckPlayer) {
+        val track = deck.track
+        if (!deck.keyLock || track == null || !deck.playing || deck.wheelTouched) {
+            deck.blockReady = false
+            return
+        }
+        val seek = deck.seekRequest
+        if (seek >= 0) {
+            deck.positionFrames = seek.toDouble()
+            deck.seekRequest = DeckPlayer.UNSET
+            deck.stretcher.reset()
+        }
+        val newPosition = deck.stretcher.generate(
+            track,
+            BLOCK_FRAMES,
+            deck.speed,
+            deck.positionFrames,
+            deck.loopInFrames,
+            deck.loopOutFrames,
+            deck.loopActive,
+            deck.blockL,
+            deck.blockR
+        )
+        deck.positionFrames = newPosition
+        if (newPosition >= (track.frameCount - 1).toDouble()) deck.playing = false
+        deck.blockReady = true
+    }
+
+    private fun sampleDeck(
+        deck: DeckPlayer,
+        masterFactor: Float,
+        headFactor: Float,
+        index: Int
+    ) {
         scratch[0] = 0f
         scratch[1] = 0f
         scratch[2] = 0f
         scratch[3] = 0f
+
+        if (deck.blockReady) {
+            val l = deck.eq.processLeft(deck.blockL[index])
+            val r = deck.eq.processRight(deck.blockR[index])
+            val gain = deck.gain
+            scratch[0] = l * gain * masterFactor
+            scratch[1] = r * gain * masterFactor
+            if (deck.pfl) {
+                scratch[2] = l * gain * headFactor
+                scratch[3] = r * gain * headFactor
+            }
+            return
+        }
 
         val track = deck.track ?: return
 

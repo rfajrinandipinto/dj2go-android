@@ -295,7 +295,7 @@ private fun DeckPanel(
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 TransportRow(deck, ui, accent, actions)
                 Spacer(Modifier.height(4.dp))
-                BeatJumpRow(deck, accent, actions)
+                BeatJumpRow(deck, ui, accent, actions)
                 Spacer(Modifier.height(4.dp))
                 PadGrid(deck, ui, accent, actions, Modifier.weight(1f))
             }
@@ -364,18 +364,24 @@ private fun TransportRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActio
 }
 
 @Composable
-private fun BeatJumpRow(deck: Deck, accent: Color, actions: DjActions) {
+private fun BeatJumpRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjActions) {
     Row(Modifier.fillMaxWidth().height(24.dp)) {
         TransportButton(
-            "-4 BEAT", false, accent,
+            "-4", false, accent,
             { actions.onBeatJump(deck, -4) },
             Modifier.weight(1f).fillMaxHeight()
         )
-        Spacer(Modifier.width(5.dp))
+        Spacer(Modifier.width(4.dp))
         TransportButton(
-            "+4 BEAT", false, accent,
+            "+4", false, accent,
             { actions.onBeatJump(deck, 4) },
             Modifier.weight(1f).fillMaxHeight()
+        )
+        Spacer(Modifier.width(4.dp))
+        TransportButton(
+            "KEY LOCK", ui.keyLock, accent,
+            { actions.onTransport(deck, ControlId.KEY_LOCK) },
+            Modifier.weight(1.7f).fillMaxHeight()
         )
     }
 }
