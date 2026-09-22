@@ -19,8 +19,8 @@ android {
         applicationId = "com.dj2go"
         minSdk = 23
         targetSdk = 34
-        versionCode = 7
-        versionName = "0.6.1"
+        versionCode = 6
+        versionName = "0.6"
     }
 
     signingConfigs {
