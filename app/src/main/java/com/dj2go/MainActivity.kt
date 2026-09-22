@@ -28,6 +28,7 @@ import com.dj2go.ui.DjActions
 import com.dj2go.ui.DjScreen
 import com.dj2go.ui.DjState
 import com.dj2go.ui.KnobId
+import com.dj2go.ui.PadMode
 import com.dj2go.ui.SettingsStore
 import com.dj2go.ui.next
 import com.dj2go.update.UpdateChecker
@@ -231,7 +232,10 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
                 }
             }
         },
-        onSeek = { deck, fraction -> audio.seekToFraction(deck, fraction) }
+        onSeek = { deck, fraction -> audio.seekToFraction(deck, fraction) },
+        onPadMode = { deck, mode ->
+            if (deck == Deck.A) state.padModeA = mode else state.padModeB = mode
+        }
     )
 
     // ---- MIDI ----

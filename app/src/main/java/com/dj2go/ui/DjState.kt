@@ -16,6 +16,13 @@ import com.dj2go.midi.Mixer
 /** What the big deck clock shows. */
 enum class TimeMode { ELAPSED, REMAINING, BEATS }
 
+/** What the performance pads control. */
+enum class PadMode(val label: String) {
+    CUE("CUE"),
+    LOOP("LOOP"),
+    SAMPLE("SAMPLE")
+}
+
 /** Touch-adjustable knobs (used when there is no controller). */
 enum class KnobId(val label: String) {
     GAIN_A("Deck 1 Gain"),
@@ -88,6 +95,8 @@ class DjState {
 
     var timeModeA by mutableStateOf(TimeMode.ELAPSED)
     var timeModeB by mutableStateOf(TimeMode.ELAPSED)
+    var padModeA by mutableStateOf(PadMode.CUE)
+    var padModeB by mutableStateOf(PadMode.CUE)
     var activeKnob by mutableStateOf<KnobId?>(null)
     var settings by mutableStateOf(DjSettings())
     var showSettings by mutableStateOf(false)

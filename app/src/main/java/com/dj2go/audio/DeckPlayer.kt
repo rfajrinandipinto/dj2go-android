@@ -199,7 +199,7 @@ class DeckPlayer {
 
     companion object {
         const val UNSET = -1L
-        const val HOT_CUE_COUNT = 4
+        const val HOT_CUE_COUNT = 8
         private const val NON_TOUCH_SCRUB_MS = 180L
     }
 }

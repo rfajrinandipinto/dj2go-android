@@ -100,7 +100,8 @@ class DjActions(
     val onOpenSettings: () -> Unit,
     val onSettingsChange: (DjSettings) -> Unit,
     val onToggleRecord: () -> Unit,
-    val onSeek: (Deck, Float) -> Unit
+    val onSeek: (Deck, Float) -> Unit,
+    val onPadMode: (Deck, PadMode) -> Unit
 )
 
 @Composable
@@ -297,7 +298,7 @@ private fun DeckPanel(
                 Spacer(Modifier.height(4.dp))
                 BeatJumpRow(deck, ui, accent, actions)
                 Spacer(Modifier.height(4.dp))
-                PadGrid(deck, ui, accent, actions, Modifier.weight(1f))
+                PadGrid(deck, ui, state, accent, actions, Modifier.weight(1f))
             }
             Spacer(Modifier.width(8.dp))
             Column(
@@ -387,16 +388,51 @@ private fun BeatJumpRow(deck: Deck, ui: DeckUi, accent: Color, actions: DjAction
 }
 
 @Composable
-private fun PadGrid(deck: Deck, ui: DeckUi, accent: Color, actions: DjActions, modifier: Modifier) {
+private fun PadGrid(
+    deck: Deck,
+    ui: DeckUi,
+    state: DjState,
+    accent: Color,
+    actions: DjActions,
+    modifier: Modifier
+) {
+    val mode = if (deck == Deck.A) state.padModeA else state.padModeB
     Column(modifier.fillMaxWidth()) {
-        PadRow(
-            deck, ui, accent, actions, ControlId.HOT_CUE,
-            listOf("1", "2", "3", "4"), Modifier.weight(1f)
-        )
+        Row(
+            Modifier.fillMaxWidth().height(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            ModeButton("CUE", mode == PadMode.CUE, accent, { actions.onPadMode(deck, PadMode.CUE) }, Modifier.weight(1f))
+            ModeButton("LOOP", mode == PadMode.LOOP, accent, { actions.onPadMode(deck, PadMode.LOOP) }, Modifier.weight(1f))
+            ModeButton("SAMPLE", mode == PadMode.SAMPLE, accent, { actions.onPadMode(deck, PadMode.SAMPLE) }, Modifier.weight(1f))
+        }
         Spacer(Modifier.height(4.dp))
-        PadRow(
-            deck, ui, accent, actions, ControlId.BEAT_LOOP,
-            listOf("1", "2", "4", "8"), Modifier.weight(1f)
+        PadRow(deck, ui, state, mode, accent, actions, 0, Modifier.weight(1f))
+        Spacer(Modifier.height(4.dp))
+        PadRow(deck, ui, state, mode, accent, actions, 4, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun ModeButton(
+    label: String,
+    active: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(if (active) accent else Color(0xFF1B1B26))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (active) Color.Black else MutedText,
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -405,20 +441,58 @@ private fun PadGrid(deck: Deck, ui: DeckUi, accent: Color, actions: DjActions, m
 private fun PadRow(
     deck: Deck,
     ui: DeckUi,
+    state: DjState,
+    mode: PadMode,
     accent: Color,
     actions: DjActions,
-    control: ControlId,
-    labels: List<String>,
+    base: Int,
     modifier: Modifier
 ) {
     Row(modifier.fillMaxWidth()) {
-        for (index in 0 until 4) {
-            val active = "${control.name}:$index" in ui.heldPads
+        for (offset in 0 until 4) {
+            val index = base + offset
+            val label = when (mode) {
+                PadMode.CUE -> "${index + 1}"
+                PadMode.LOOP -> when (index) {
+                    0 -> "1"
+                    1 -> "2"
+                    2 -> "4"
+                    3 -> "8"
+                    4 -> "IN"
+                    5 -> "OUT"
+                    6 -> "TGL"
+                    else -> "R/S"
+                }
+                PadMode.SAMPLE -> "S${index + 1}"
+            }
+            val active = when (mode) {
+                PadMode.CUE -> "HOT_CUE:$index" in ui.heldPads
+                PadMode.LOOP -> when (index) {
+                    0, 1, 2, 3 -> "BEAT_LOOP:$index" in ui.heldPads
+                    4 -> "LOOP_IN:0" in ui.heldPads
+                    5 -> "LOOP_OUT:0" in ui.heldPads
+                    6 -> "LOOP_TOGGLE:0" in ui.heldPads
+                    else -> "RELOOP_STOP:0" in ui.heldPads
+                }
+                PadMode.SAMPLE -> index in state.samplerPlaying
+            }
             Pad(
-                label = labels.getOrElse(index) { "${index + 1}" },
+                label = label,
                 active = active,
                 accent = accent,
-                onClick = { actions.onPad(deck, control, index) },
+                onClick = {
+                    when (mode) {
+                        PadMode.CUE -> actions.onPad(deck, ControlId.HOT_CUE, index)
+                        PadMode.LOOP -> when (index) {
+                            0, 1, 2, 3 -> actions.onPad(deck, ControlId.BEAT_LOOP, index)
+                            4 -> actions.onPad(deck, ControlId.LOOP_IN, 0)
+                            5 -> actions.onPad(deck, ControlId.LOOP_OUT, 0)
+                            6 -> actions.onPad(deck, ControlId.LOOP_TOGGLE, 0)
+                            else -> actions.onPad(deck, ControlId.RELOOP_STOP, 0)
+                        }
+                        PadMode.SAMPLE -> actions.onSamplerTrigger(index)
+                    }
+                },
                 modifier = Modifier.weight(1f).fillMaxHeight().padding(horizontal = 3.dp)
             )
         }
