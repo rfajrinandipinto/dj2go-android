@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
         audio.applySettings(state.settings.crossfaderCurve, state.settings.tempoRange)
         refreshOutputs()
         loadLibraryFromPrefs()
-        state.updateUrl = loadUpdateUrl()
+        state.updateUrl = loadUpdateUrl().ifEmpty { DEFAULT_MANIFEST_URL }
         state.refresh(mixer, audio)
 
         setContent {
@@ -608,5 +608,7 @@ class MainActivity : AppCompatActivity(), MidiInputManager.Listener, AudioEngine
     companion object {
         private const val MAX_LOG_CHARS = 8000
         private const val TICK_MS = 16L
+        private const val DEFAULT_MANIFEST_URL =
+            "https://raw.githubusercontent.com/rfajrinandipinto/dj2go-android/main/update.json"
     }
 }
