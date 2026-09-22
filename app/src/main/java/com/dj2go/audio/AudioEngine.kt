@@ -49,6 +49,8 @@ class AudioEngine(context: Context) {
     @Volatile private var headphoneGain = 100
     @Volatile private var crossfaderCurve = CrossfaderCurve.SMOOTH
     @Volatile private var tempoRange = 0.10f
+    @Volatile private var syncA = false
+    @Volatile private var syncB = false
 
     @Volatile
     var levelA = 0f
@@ -265,7 +267,24 @@ class AudioEngine(context: Context) {
         cueMix = mixer.cueMix
         masterGain = mixer.masterGain
         headphoneGain = mixer.headphoneGain
+        syncA = mixer.deckA.sync
+        syncB = mixer.deckB.sync
         event.deck?.let { handleDeck(it, event, mixer) }
+    }
+
+    /** While SYNC is on, keep the deck's tempo locked to the other deck. */
+    private fun maintainSync() {
+        if (syncA) applySync(deckA, deckB)
+        if (syncB) applySync(deckB, deckA)
+    }
+
+    private fun applySync(deck: DeckPlayer, other: DeckPlayer) {
+        val thisGrid = deck.track?.beatGrid ?: return
+        val otherGrid = other.track?.beatGrid ?: return
+        if (!thisGrid.valid || !otherGrid.valid) return
+        val otherEffective = otherGrid.bpm * other.speed
+        val ratio = otherEffective / thisGrid.bpm
+        deck.applySpeed(ratio.coerceIn(1f - tempoRange, 1f + tempoRange))
     }
 
     fun release() {
@@ -425,9 +444,9 @@ class AudioEngine(context: Context) {
         deckB.fx.configure(
             SAMPLE_RATE, deckB.track?.beatGrid?.bpm ?: 0f, DeckFx.BEATS, deckB.fxWet, deckB.fxOn
         )
+        maintainSync()
         prepareDeckBlock(deckA)
         prepareDeckBlock(deckB)
-
         var peakA = 0f
         var peakB = 0f
         var peakMaster = 0f

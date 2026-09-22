@@ -201,7 +201,7 @@ private fun DeckState.toUi(player: DeckPlayer, level: Float): DeckUi {
         heldPads = heldPads.toSet(),
         waveform = player.track?.waveform,
         beatGrid = grid,
-        bpm = grid?.bpm ?: 0f,
+        bpm = (grid?.bpm ?: 0f) * player.speed,
         key = player.track?.key ?: "",
         camelot = player.track?.camelot ?: "",
         positionFrames = positionFrames,
